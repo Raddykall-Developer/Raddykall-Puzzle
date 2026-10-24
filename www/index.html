@@ -2409,6 +2409,20 @@ body.admob-banner-active #app{height:calc(100% - var(--admob-banner-height,50px)
  #home .fall i,#home .logo,.hbtn{animation:none!important;transition:none!important}
 }
 
+
+/* Final theme-specific contrast correction: preserve palette foreground on every surface. */
+#score,#lvl,#best,#time,#goal,.gt,#movesTxt,#timeTxt,#goalTxt{color:var(--text)!important}
+#best,.muted,.row small,.grp small,.sh-title small{color:var(--muted)!important}
+#hud{background:color-mix(in srgb,var(--card) 94%,var(--bg));border:1px solid color-mix(in srgb,var(--text) 24%,transparent);border-radius:24px}
+#hud .ib{color:#fff}
+#goal .gt,#time{background:color-mix(in srgb,var(--card) 92%,var(--bg));border-color:color-mix(in srgb,var(--text) 18%,transparent)}
+#goal i,#time i{background:color-mix(in srgb,var(--text) 13%,var(--card));border-color:color-mix(in srgb,var(--text) 20%,transparent)}
+#panel .set-sec,#panel .grp{color:var(--text)}
+#panel .set-btn{background:color-mix(in srgb,var(--card) 92%,var(--text) 8%)}
+#panel .set-btn em,#panel .row output{color:var(--accent)}
+#shop .sh-head,#page .sh-head{color:var(--text)}
+#shop .sc,#page .sc{background:color-mix(in srgb,var(--card) 95%,var(--text) 5%)}
+
 </style>
 
 </head>
