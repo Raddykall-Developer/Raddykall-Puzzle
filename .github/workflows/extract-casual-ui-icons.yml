@@ -20,13 +20,15 @@ jobs:
           mkdir -p www/assets/casual-mobile-ui
           unzip -o Casual_Mobile_UI_Icons_v1.0.zip -d www/assets/casual-mobile-ui
           test -n "$(find www/assets/casual-mobile-ui -type f -name '*.png' -print -quit)"
+          mkdir -p public/assets/casual-mobile-ui
+          cp -a www/assets/casual-mobile-ui/. public/assets/casual-mobile-ui/
           echo "Extracted PNG files: $(find www/assets/casual-mobile-ui -type f -name '*.png' | wc -l)"
           find www/assets/casual-mobile-ui -maxdepth 2 -type f | head -40
       - name: Commit extracted assets
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add www/assets/casual-mobile-ui
+          git add www/assets/casual-mobile-ui public/assets/casual-mobile-ui
           if git diff --cached --quiet; then
             echo "No asset changes to commit."
           else
