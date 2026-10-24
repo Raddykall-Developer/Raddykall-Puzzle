@@ -25,6 +25,23 @@ jobs:
       - name: Instalar dependencias
         run: npm ci
 
+      - name: Verificar recursos del paquete gráfico
+        shell: bash
+        run: |
+          set -euo pipefail
+          base="public/assets/themes/block-puzzle-kit-free/art"
+          for color in blue cyan green orange pink purple red yellow; do
+            test -s "$base/glossy/hd/$color.png" || { echo "Falta recurso: $color.png"; exit 1; }
+          done
+          for asset in board/cell.png board/cell_alt.png board/frame.png; do
+            test -s "$base/glossy/hd/$asset" || { echo "Falta recurso: $asset"; exit 1; }
+          done
+          for particle in glow ring shard sparkle; do
+            test -s "$base/particles/$particle.png" || { echo "Falta partícula: $particle.png"; exit 1; }
+          done
+          grep -q "Block Puzzle Kit Free by heyheythere" public/assets/themes/block-puzzle-kit-free/LICENSE.txt
+          echo "OK: sprites, tablero, partículas y atribución del paquete presentes"
+
       - name: Construir el juego web
         run: npm run build
 
@@ -33,6 +50,9 @@ jobs:
         with:
           distribution: temurin
           java-version: '21'
+
+      - name: Cachear dependencias de Gradle
+        uses: gradle/actions/setup-gradle@v4
 
       - name: Crear el proyecto Android
         run: npx cap add android
