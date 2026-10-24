@@ -2578,6 +2578,129 @@ input::placeholder,textarea::placeholder{color:#BCC9E8;opacity:1}
 
 </style>
 
+
+<style id="raddykall-ui-audit-v1">
+/* Accessibility and responsive layout audit: high contrast, bounded layouts, safe-area-aware ad slot. */
+:root{
+  --text:#f5f7ff; --muted:#d0d9f2; --accent:#67ddff;
+  --ad-bg:#182344; --ad-line:#7798db;
+  text-size-adjust:100%; -webkit-text-size-adjust:100%;
+}
+html,body{min-width:0;width:100%;overflow:hidden}
+body{color:var(--text);line-height:1.35}
+button,input,select,textarea{font:inherit}
+button{min-width:0;max-width:100%;-webkit-tap-highlight-color:transparent}
+#app,#page,#shop,#tetris{box-sizing:border-box;min-width:0;max-width:100vw}
+#app{padding-bottom:env(safe-area-inset-bottom,0px)}
+#hud{flex-shrink:0;min-width:0;gap:clamp(5px,2vw,10px);padding-left:clamp(10px,3vw,16px);padding-right:clamp(10px,3vw,16px)}
+#hud>div{min-width:0}
+#score{font-size:clamp(32px,9vw,44px);color:#fff;text-shadow:0 2px 5px #080d24b8}
+#best,#time,#goal,.gt,#lvl{color:#edf2ff}
+#best,.muted,.sh-title small,.row small,.grp{color:#d0d9f2}
+#lvl{width:clamp(72px,23vw,96px);flex-shrink:0}
+.ib{flex-shrink:0;box-shadow:0 3px 0 rgba(0,0,0,.24),inset 0 1px 0 rgba(255,255,255,.18)}
+#time,#goal{flex-shrink:0}
+#goal .gt{gap:8px;line-height:1.35}
+#stage{min-width:0;min-height:0;overflow:hidden}
+#cv{max-width:100%;max-height:100%;outline:none}
+#tools{flex-shrink:0;gap:clamp(4px,1.6vw,8px);padding-left:clamp(5px,2vw,10px);padding-right:clamp(5px,2vw,10px)}
+.tool{min-width:0;overflow:visible;color:#f7f9ff;background:linear-gradient(160deg,color-mix(in srgb,var(--card) 84%,#fff 16%),var(--card));border:1px solid rgba(220,232,255,.25)}
+.tool small{font-size:clamp(9px,2.7vw,11px);line-height:1.2;color:#f4f6ff}
+.tool .bd{box-shadow:0 1px 4px #080d24a8}
+#home{
+  box-sizing:border-box;
+  padding-left:max(12px,env(safe-area-inset-left,0px));
+  padding-right:max(12px,env(safe-area-inset-right,0px));
+  background:
+   radial-gradient(ellipse at 12% 18%,rgba(56,214,255,.25),transparent 34%),
+   radial-gradient(ellipse at 87% 26%,rgba(255,104,195,.2),transparent 32%),
+   radial-gradient(ellipse at 73% 76%,rgba(135,98,255,.24),transparent 35%),
+   radial-gradient(ellipse at 22% 85%,rgba(255,190,83,.14),transparent 28%),
+   radial-gradient(130% 70% at 50% -5%,var(--ha,#4b2f9a) 0%,var(--hb,#241a5c) 42%,var(--hc,#0f0c2b) 100%);
+}
+#home .hm{
+  width:100%;max-width:420px;max-height:100%;
+  min-height:0;gap:clamp(6px,1.35vh,12px);
+  justify-content:center;
+}
+#home .prof,#home .hbar,#home .dock,#home .links{width:100%;max-width:100%;min-width:0;box-sizing:border-box}
+#home .logo{flex:0 1 auto;max-width:min(78vw,330px);height:clamp(76px,18vh,158px);min-height:0;margin:0 auto}
+#home .hbtn{
+  position:relative;box-sizing:border-box;width:100%;min-width:0;
+  min-height:clamp(54px,7.4vh,70px);padding:clamp(8px,1.6vh,13px) clamp(12px,3.5vw,17px);
+  border:1px solid rgba(255,255,255,.42);border-radius:19px;color:#fff;
+  box-shadow:0 4px 0 var(--hb,#18213e),0 7px 17px rgba(0,0,0,.2),inset 0 1px 0 rgba(255,255,255,.45);
+}
+#home .hbtn b{font-size:clamp(16px,4.7vw,20px);line-height:1.2;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.38)}
+#home .hbtn small{font-size:clamp(11px,3.1vw,13px);line-height:1.3;color:#fff;opacity:1;text-shadow:0 1px 2px rgba(0,0,0,.42)}
+#home .hbtn.go{background:linear-gradient(180deg,#ffe783,#ffb72e);color:#392200}
+#home .hbtn.go b{color:#392200;text-shadow:none}
+#home .hbtn.lv{background:linear-gradient(180deg,#4de5ad,#139d79)}
+#home .hbtn.inf{background:linear-gradient(180deg,#42d4f8,#2679d8)}
+#home .hbtn.tet{background:linear-gradient(180deg,#ff879e,#d82f62)}
+#home .dock{gap:clamp(5px,1.7vw,8px);margin-top:2px}
+#home .dk{
+  min-width:0;max-width:none;min-height:clamp(54px,8vh,70px);
+  padding:7px 2px 5px;border:1px solid rgba(226,236,255,.32);
+  background:linear-gradient(160deg,rgba(115,143,198,.42),rgba(24,32,70,.92));
+  box-shadow:0 3px 0 rgba(5,10,32,.45),inset 0 1px 0 rgba(255,255,255,.22);
+}
+#home .dk .ic{width:clamp(19px,5.8vw,25px);height:clamp(19px,5.8vw,25px)}
+#home .dk small{font-size:clamp(9px,2.7vw,11px);line-height:1.15;color:#fff;opacity:1;font-weight:850}
+#home .ver{color:#e0e9ff;font-size:11px;text-shadow:0 1px 3px #080d24}
+#home .fall i{opacity:.23;filter:saturate(1.45);box-shadow:0 0 18px currentColor}
+#home .fall i:nth-child(4n){background:#49dfff!important;box-shadow:0 0 20px #49dfff}
+#home .fall i:nth-child(4n + 1){background:#ff79d1!important;box-shadow:0 0 20px #ff79d1}
+#home .fall i:nth-child(4n + 2){background:#b89aff!important;box-shadow:0 0 20px #b89aff}
+#home .fall i:nth-child(4n + 3){background:#ffd46c!important;box-shadow:0 0 20px #ffd46c}
+#quick{padding-top:env(safe-area-inset-top,0px);box-sizing:border-box}
+.qs{max-height:calc(100dvh - env(safe-area-inset-top,0px));padding-bottom:calc(16px + env(safe-area-inset-bottom,0px))}
+.qs h2,.qs button,.card h1,.card h2,.card p,.sh-head,.sh-title,.row,.grp{overflow-wrap:anywhere}
+.card{box-sizing:border-box;max-width:calc(100vw - 28px);max-height:calc(100dvh - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px));}
+.rk-ad-slot{
+  box-sizing:border-box;width:100%;max-width:100%;min-width:0;
+  border:1px solid var(--ad-line)!important;border-radius:14px!important;
+  background:linear-gradient(135deg,var(--ad-bg),color-mix(in srgb,var(--ad-bg) 78%,#6a76d9 22%))!important;
+  color:#f4f6ff!important;text-align:center;
+}
+.rk-ad-label{color:#bfeeff!important;font-size:10px!important;letter-spacing:1.5px}
+.rk-ad-message{color:#f5f7ff!important;font-size:12px!important;line-height:1.35;font-weight:750!important}
+/* The native Google banner overlays the WebView. Hide mock placeholders and reserve its real space. */
+:root{--admob-banner-height:50px}
+body.admob-native .rk-ad-slot{display:none!important}
+body.admob-banner-active #app{
+  height:calc(100% - var(--admob-banner-height,50px) - env(safe-area-inset-bottom,0px))!important;
+  max-height:calc(100% - var(--admob-banner-height,50px) - env(safe-area-inset-bottom,0px))!important;
+}
+body.admob-banner-active #home{
+  bottom:calc(var(--admob-banner-height,50px) + env(safe-area-inset-bottom,0px))!important;
+  padding-bottom:calc(8px + env(safe-area-inset-bottom,0px))!important;
+}
+body.admob-native #home .rk-ad-slot{display:none!important}
+@media(max-height:760px){
+ #home .hm{gap:5px}
+ #home .logo{height:clamp(66px,13vh,110px)}
+ #home .hbtn{min-height:48px;padding:7px 12px}
+ #home .hbtn b{font-size:17px}
+ #home .hbtn small{font-size:11px}
+ #home .dk{min-height:48px;padding:5px 1px}
+ #home .dk .ic{width:19px;height:19px}
+ #home .dk small{font-size:9px}
+}
+@media(max-width:360px){
+ #home{padding-left:9px;padding-right:9px}
+ #home .hm{gap:5px}
+ #home .hbtn{border-radius:15px}
+ #home .dock{gap:4px}
+ #home .dk{border-radius:12px}
+ #hud{gap:4px}
+ #lvl{width:70px}
+}
+@media(prefers-reduced-motion:reduce){
+ #home .fall i,#home .logo{animation:none!important}
+ *,*::before,*::after{scroll-behavior:auto!important}
+}
+</style>
 </head>
 <body>
 <div id="bg"><i></i><i></i><i></i><i></i><i class="hb"></i><i class="hb"></i><i class="sp" style="left:44%;top:22%;animation-delay:-1.6s;animation-duration:2.7s"></i><i class="sp" style="left:71%;top:15%;animation-delay:-1.5s;animation-duration:2.7s"></i><i class="sp" style="left:67%;top:30%;animation-delay:-0.1s;animation-duration:3.6s"></i><i class="sp" style="left:11%;top:33%;animation-delay:-0.4s;animation-duration:3.6s"></i><i class="sp" style="left:75%;top:18%;animation-delay:-3.8s;animation-duration:4.1s"></i><i class="sp" style="left:77%;top:10%;animation-delay:-2.3s;animation-duration:3.6s"></i><i class="sp" style="left:31%;top:8%;animation-delay:-2.2s;animation-duration:2.9s"></i><i class="sp" style="left:56%;top:21%;animation-delay:-2.2s;animation-duration:4.0s"></i><i class="sp" style="left:74%;top:90%;animation-delay:-0.7s;animation-duration:4.0s"></i><i class="sp" style="left:84%;top:27%;animation-delay:-1.5s;animation-duration:3.9s"></i><i class="sp" style="left:11%;top:75%;animation-delay:-0.2s;animation-duration:3.1s"></i><i class="sp" style="left:90%;top:71%;animation-delay:-1.7s;animation-duration:3.4s"></i><i class="sp" style="left:77%;top:61%;animation-delay:-1.4s;animation-duration:3.2s"></i><i class="sp" style="left:26%;top:92%;animation-delay:-3.1s;animation-duration:2.8s"></i></div>
