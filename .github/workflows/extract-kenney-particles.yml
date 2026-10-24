@@ -1,0 +1,48 @@
+name: Extract Kenney Particle Pack
+on:
+  push:
+    paths:
+      - 'kenney_particle-pack.zip'
+      - '.github/workflows/extract-kenney-particles.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  extract-particles:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Extract particle sprites
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/kenney-particles www/assets/kenney-particles
+          mkdir -p /tmp/kenney-particles www/assets/kenney-particles
+          unzip -q kenney_particle-pack.zip -d /tmp/kenney-particles
+          echo "Top-level archive contents:"
+          find /tmp/kenney-particles -maxdepth 2 -type f | sed 's#^/tmp/kenney-particles/##' | head -80
+          count=$(find /tmp/kenney-particles -type f \( -iname '*.png' -o -iname '*.webp' -o -iname '*.jpg' -o -iname '*.json' \) | wc -l)
+          test "$count" -gt 0
+          # Keep image sprites and small metadata only; exclude source archives and editor files.
+          while IFS= read -r -d '' file; do
+            rel="${file#/tmp/kenney-particles/}"
+            mkdir -p "www/assets/kenney-particles/$(dirname "$rel")"
+            cp "$file" "www/assets/kenney-particles/$rel"
+          done < <(find /tmp/kenney-particles -type f \( -iname '*.png' -o -iname '*.webp' -o -iname '*.jpg' -o -iname '*.json' -o -iname 'license*' -o -iname 'readme*' -o -iname 'credits*' \) -print0)
+          echo "Extracted image and metadata files: $count"
+          echo "PNG sprite samples:"
+          find www/assets/kenney-particles -type f -iname '*.png' | sort | head -100
+      - name: Commit extracted particle assets
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add www/assets/kenney-particles
+          if git diff --cached --quiet; then
+            echo "No particle asset changes to commit."
+          else
+            git commit -m "Extract Kenney particle pack into game assets"
+            git push
+          fi
