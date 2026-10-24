@@ -55,5 +55,7 @@ jobs:
             echo "No particle asset changes to commit."
           else
             git commit -m "Extract transparent Kenney particle sprites"
+            # Another asset workflow may have pushed first; rebase and retry once onto the latest main.
+            git pull --rebase origin main
             git push
           fi
