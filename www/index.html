@@ -2069,6 +2069,52 @@ button { touch-action: manipulation; }
 @media(prefers-reduced-motion:reduce){.rk-casual-asset{scroll-behavior:auto}}
 </style>
 
+
+<style id="raddykall-v40-asset-backed-themes">
+/* Temas con arte Kenney: capas ligeras, imágenes locales y sin cargas externas. */
+#bg:after{
+  content:"";position:absolute;inset:0;pointer-events:none;opacity:0;
+  background-repeat:no-repeat;transition:opacity .18s ease;
+}
+html[data-gtheme="galaxy3d"] #bg:after{
+  opacity:.25;
+  background-image:url("assets/kenney-particles/star_03.png"),url("assets/kenney-particles/flare_01.png"),url("assets/kenney-particles/twirl_01.png"),url("assets/kenney-particles/magic_04.png");
+  background-position:8% 18%,88% 27%,82% 78%,22% 74%;
+  background-size:42px 42px,66px 66px,130px 130px,58px 58px;
+}
+html[data-gtheme="crystal"] #bg:after{
+  opacity:.22;
+  background-image:url("assets/kenney-particles/star_05.png"),url("assets/kenney-particles/flare_01.png"),url("assets/kenney-particles/twirl_02.png");
+  background-position:12% 24%,84% 18%,80% 80%;
+  background-size:40px 40px,58px 58px,142px 142px;
+}
+html[data-gtheme="ember"] #bg:after{
+  opacity:.2;
+  background-image:url("assets/kenney-particles/spark_03.png"),url("assets/kenney-particles/spark_06.png"),url("assets/kenney-particles/flame_03.png");
+  background-position:14% 22%,83% 72%,86% 42%;
+  background-size:44px 44px,35px 35px,86px 118px;
+}
+.tp[data-theme-art]{position:relative;overflow:hidden;isolation:isolate}
+.tp[data-theme-art]:after{
+  content:"";position:absolute;z-index:0;inset:0;pointer-events:none;
+  background-repeat:no-repeat;opacity:.4;
+}
+.tp[data-theme-art] .b,.tp[data-theme-art] .a{position:relative;z-index:1}
+.tp[data-theme-art="galaxy3d"]:after{
+  background-image:url("assets/kenney-particles/star_03.png"),url("assets/kenney-particles/flare_01.png"),url("assets/kenney-particles/twirl_01.png");
+  background-position:8% 12%,91% 18%,89% 95%;background-size:28px 28px,38px 38px,68px 68px;
+}
+.tp[data-theme-art="crystal"]:after{
+  background-image:url("assets/kenney-particles/star_05.png"),url("assets/kenney-particles/flare_01.png"),url("assets/kenney-particles/twirl_02.png");
+  background-position:8% 15%,90% 20%,88% 92%;background-size:24px 24px,33px 33px,70px 70px;
+}
+.tp[data-theme-art="ember"]:after{
+  background-image:url("assets/kenney-particles/spark_03.png"),url("assets/kenney-particles/spark_06.png"),url("assets/kenney-particles/flame_03.png");
+  background-position:6% 15%,91% 90%,95% 25%;background-size:28px 28px,24px 24px,44px 60px;
+}
+@media(prefers-reduced-motion:reduce){#bg:after{transition:none}}
+</style>
+
 </head>
 <body>
 <div id="bg"><i></i><i></i><i></i><i></i><i class="hb"></i><i class="hb"></i><i class="sp" style="left:44%;top:22%;animation-delay:-1.6s;animation-duration:2.7s"></i><i class="sp" style="left:71%;top:15%;animation-delay:-1.5s;animation-duration:2.7s"></i><i class="sp" style="left:67%;top:30%;animation-delay:-0.1s;animation-duration:3.6s"></i><i class="sp" style="left:11%;top:33%;animation-delay:-0.4s;animation-duration:3.6s"></i><i class="sp" style="left:75%;top:18%;animation-delay:-3.8s;animation-duration:4.1s"></i><i class="sp" style="left:77%;top:10%;animation-delay:-2.3s;animation-duration:3.6s"></i><i class="sp" style="left:31%;top:8%;animation-delay:-2.2s;animation-duration:2.9s"></i><i class="sp" style="left:56%;top:21%;animation-delay:-2.2s;animation-duration:4.0s"></i><i class="sp" style="left:74%;top:90%;animation-delay:-0.7s;animation-duration:4.0s"></i><i class="sp" style="left:84%;top:27%;animation-delay:-1.5s;animation-duration:3.9s"></i><i class="sp" style="left:11%;top:75%;animation-delay:-0.2s;animation-duration:3.1s"></i><i class="sp" style="left:90%;top:71%;animation-delay:-1.7s;animation-duration:3.4s"></i><i class="sp" style="left:77%;top:61%;animation-delay:-1.4s;animation-duration:3.2s"></i><i class="sp" style="left:26%;top:92%;animation-delay:-3.1s;animation-duration:2.8s"></i></div>
@@ -2483,6 +2529,18 @@ const THEMES = [
     '--bg': '#f5eee2', '--text': '#3e3026', '--muted': '#8c7866', '--board': '#dfcfba', '--cell': '#ede1d0', '--card': '#fffaf2',
     '--accent': '#bd6845', '--ad-bg': '#ece0d0', '--ad-line': '#c5a78d', '--b1': '#eac7a4', '--b2': '#d3d9b2', '--b3': '#f1cfbe', '--b4': '#c8dce0',
     '--ba': '.65', '--ha': '#9f573d', '--hb': '#70432f', '--hc': '#30231d' } },
+  { id: 'galaxy3d', name: 'Galaxia 3D', price: 650, note: 'Nebulosas violetas y estrellas Kenney', vars: {
+    '--bg':'#100e2b','--text':'#f5f0ff','--muted':'#aaa5e4','--board':'#211b4b','--cell':'#30265f','--card':'#191438',
+    '--accent':'#aa8bff','--ad-bg':'#18123a','--ad-line':'#51417f','--b1':'#633cb5','--b2':'#252c8c','--b3':'#7b2cbf','--b4':'#126c91',
+    '--ba':'.46','--ha':'#512a92','--hb':'#241451','--hc':'#09091e' } },
+  { id: 'crystal', name: 'Cristal Prisma', price: 550, note: 'Brillos azules y destellos de cristal', vars: {
+    '--bg':'#0b1b32','--text':'#eaf8ff','--muted':'#90b9dc','--board':'#14334d','--cell':'#1d4764','--card':'#10283f',
+    '--accent':'#59d9ff','--ad-bg':'#10253b','--ad-line':'#2b6480','--b1':'#126c9b','--b2':'#2947a5','--b3':'#5b3aa5','--b4':'#1f867b',
+    '--ba':'.42','--ha':'#145e8a','--hb':'#102e59','--hc':'#061526' } },
+  { id: 'ember', name: 'Chispas Ámbar', price: 450, note: 'Chispas cálidas sobre azul nocturno', vars: {
+    '--bg':'#1c1428','--text':'#fff4e6','--muted':'#c9a6a0','--board':'#38213a','--cell':'#4b2d45','--card':'#291b32',
+    '--accent':'#ffc15a','--ad-bg':'#2c1c2c','--ad-line':'#7b4a48','--b1':'#a34d38','--b2':'#6e317c','--b3':'#a45c2d','--b4':'#3c586c',
+    '--ba':'.4','--ha':'#9a4930','--hb':'#4b2342','--hc':'#120c20' } },
 ];
 /* Even the optional color palettes retain the permanent-dark surfaces. Their accents remain unique. */
 const DARK_PALETTE_SURFACES = {
@@ -2493,6 +2551,10 @@ const DARK_PALETTE_SURFACES = {
   mint:    {'--bg':'#0d1f1d','--text':'#e9fffb','--muted':'#87b9b0','--board':'#193b37','--cell':'#245047','--card':'#112c29','--ad-bg':'#14332f','--ad-line':'#397269','--accent':'#49dfc0','--b1':'#287e73','--b2':'#369c85','--b3':'#6a9c63','--b4':'#9bcf9b','--ba':'.46','--ha':'#236b62','--hb':'#12413d','--hc':'#071d1b'},
   rose:    {'--bg':'#21131d','--text':'#fff0f5','--muted':'#c69caf','--board':'#412433','--cell':'#533044','--card':'#301c29','--ad-bg':'#351f2b','--ad-line':'#805064','--accent':'#ff83b0','--b1':'#ae456f','--b2':'#b36cab','--b3':'#ce718b','--b4':'#6d96b8','--ba':'.46','--ha':'#873b5b','--hb':'#4f233f','--hc':'#1e101b'},
   sand:    {'--bg':'#211710','--text':'#fff0dd','--muted':'#c8a98a','--board':'#3d2a20','--cell':'#4e3628','--card':'#2b1e17','--ad-bg':'#302118','--ad-line':'#78533b','--accent':'#e7a261','--b1':'#aa6238','--b2':'#bb8e47','--b3':'#a54d37','--b4':'#6b9180','--ba':'.44','--ha':'#9c5c39','--hb':'#563322','--hc':'#1e120c'}
+  galaxy3d:{'--bg':'#100b24','--text':'#f5f0ff','--muted':'#aea1e3','--board':'#211a42','--cell':'#302355','--card':'#191331','--ad-bg':'#17102e','--ad-line':'#504078','--accent':'#b59bff','--b1':'#633cb5','--b2':'#292e86','--b3':'#6c299c','--b4':'#126c91','--ba':'.36','--ha':'#512a92','--hb':'#241451','--hc':'#09091e'},
+  crystal: {'--bg':'#091725','--text':'#eaf8ff','--muted':'#91bad5','--board':'#123044','--cell':'#1a4056','--card':'#0f2435','--ad-bg':'#102536','--ad-line':'#2b647f','--accent':'#5ddcff','--b1':'#126c9b','--b2':'#2947a5','--b3':'#5b3aa5','--b4':'#1f867b','--ba':'.34','--ha':'#145e8a','--hb':'#102e59','--hc':'#061526'},
+  ember:   {'--bg':'#180f1c','--text':'#fff4e6','--muted':'#d0aaa0','--board':'#33202b','--cell':'#482936','--card':'#251722','--ad-bg':'#2c1b24','--ad-line':'#7b4a48','--accent':'#ffc15a','--b1':'#a34d38','--b2':'#6e317c','--b3':'#a45c2d','--b4':'#3c586c','--ba':'.3','--ha':'#9a4930','--hb':'#4b2342','--hc':'#120c20'}
+
 };
 for (const theme of THEMES) {
   if (DARK_PALETTE_SURFACES[theme.id] && theme.vars) Object.assign(theme.vars, DARK_PALETTE_SURFACES[theme.id]);
@@ -2712,7 +2774,7 @@ function skinThumb(i) {
 function themePrev(th) {
   const v = th.vars, cells = bg => `<i style="background:${bg}"></i>`.repeat(8);
   if (!v) return `<div class="tp" style="background:#14172b"><div class="b" style="background:#232848">${cells('#2d3359')}</div><div class="a" style="background:#7d8bff"></div></div>`;
-  return `<div class="tp" style="background:${v['--bg']}"><div class="b" style="background:${v['--board']}">${cells(v['--cell'])}</div><div class="a" style="background:${v['--accent']}"></div></div>`;
+  return `<div class="tp" data-theme-art="${th.id}" style="background:${v['--bg']}"><div class="b" style="background:${v['--board']}">${cells(v['--cell'])}</div><div class="a" style="background:${v['--accent']}"></div></div>`;
 }
 function itemBtn(kind, id, price, eq, owned) {
   if (eq) return '<span class="sc-on">Equipado</span>';
