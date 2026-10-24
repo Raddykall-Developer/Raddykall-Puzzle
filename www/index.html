@@ -2121,7 +2121,10 @@ html[data-gtheme="ember"] #bg:after{
    Runtime uses optimized local WebP files, not the multi-megabyte source PNGs. */
 html[data-gtheme="night"] body,
 html[data-gtheme="cocoa"] body,
-html[data-gtheme="slate"] body{
+html[data-gtheme="slate"] body,
+html[data-gtheme="night"] #home,
+html[data-gtheme="cocoa"] #home,
+html[data-gtheme="slate"] #home{
   background-color:var(--bg)!important;
   background-image:linear-gradient(180deg,rgba(5,8,27,.48),rgba(7,8,28,.78)),url("assets/kenney-skyboxes-space/mobile/skybox-space-dark.webp")!important;
   background-size:cover!important;background-position:center center!important;background-repeat:no-repeat!important;background-attachment:fixed;
