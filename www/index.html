@@ -2199,6 +2199,38 @@ html[data-gtheme="sunset"] #home{
 .tp[data-theme-art] .b{background:rgba(9,12,35,.46)!important;box-shadow:inset 0 0 0 1px rgba(255,255,255,.09)}
 .tp[data-theme-art] .b i{opacity:.9}
 .tp[data-theme-art] .a{box-shadow:0 2px 8px rgba(0,0,0,.27)}
+/* Carry each selected space environment through the store and secondary pages too. */
+html[data-gtheme="night"] #shop,html[data-gtheme="night"] #page,
+html[data-gtheme="cocoa"] #shop,html[data-gtheme="cocoa"] #page,
+html[data-gtheme="slate"] #shop,html[data-gtheme="slate"] #page{
+  background-image:linear-gradient(180deg,rgba(11,15,38,.84),rgba(8,10,29,.94)),url("assets/kenney-skyboxes-space/mobile/skybox-space-dark.webp")!important;
+  background-size:cover!important;background-position:center!important;
+}
+html[data-gtheme="galaxy3d"] #shop,html[data-gtheme="galaxy3d"] #page{
+  background-image:linear-gradient(180deg,rgba(16,10,43,.82),rgba(9,7,28,.94)),url("assets/kenney-skyboxes-space/mobile/skybox-space-galaxy.webp")!important;
+  background-size:cover!important;background-position:center!important;
+}
+html[data-gtheme="aurora"] #shop,html[data-gtheme="aurora"] #page,
+html[data-gtheme="lavender"] #shop,html[data-gtheme="lavender"] #page,
+html[data-gtheme="rose"] #shop,html[data-gtheme="rose"] #page{
+  background-image:linear-gradient(180deg,rgba(13,14,42,.83),rgba(10,8,31,.94)),url("assets/kenney-skyboxes-space/mobile/skybox-space-nebula.webp")!important;
+  background-size:cover!important;background-position:center!important;
+}
+html[data-gtheme="crystal"] #shop,html[data-gtheme="crystal"] #page,
+html[data-gtheme="quartz"] #shop,html[data-gtheme="quartz"] #page,
+html[data-gtheme="forest"] #shop,html[data-gtheme="forest"] #page,
+html[data-gtheme="mint"] #shop,html[data-gtheme="mint"] #page,
+html[data-gtheme="ivory"] #shop,html[data-gtheme="ivory"] #page,
+html[data-gtheme="sand"] #shop,html[data-gtheme="sand"] #page,
+html[data-gtheme="auto"] #shop,html[data-gtheme="auto"] #page{
+  background-image:linear-gradient(180deg,rgba(13,24,44,.84),rgba(9,16,32,.94)),url("assets/kenney-skyboxes-space/mobile/skybox-space-day.webp")!important;
+  background-size:cover!important;background-position:center!important;
+}
+html[data-gtheme="ember"] #shop,html[data-gtheme="ember"] #page,
+html[data-gtheme="sunset"] #shop,html[data-gtheme="sunset"] #page{
+  background-image:linear-gradient(180deg,rgba(30,12,31,.83),rgba(13,8,28,.94)),url("assets/kenney-skyboxes-space/mobile/skybox-space-band.webp")!important;
+  background-size:cover!important;background-position:center!important;
+}
 @media(prefers-reduced-motion:reduce){html[data-gtheme] body{background-attachment:scroll}}
 </style>
 
