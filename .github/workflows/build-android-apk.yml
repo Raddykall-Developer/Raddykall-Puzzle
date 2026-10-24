@@ -40,7 +40,13 @@ jobs:
             test -s "$base/particles/$particle.png" || { echo "Falta partícula: $particle.png"; exit 1; }
           done
           grep -q "Block Puzzle Kit Free by heyheythere" public/assets/themes/block-puzzle-kit-free/LICENSE.txt
-          echo "OK: sprites, tablero, partículas y atribución del paquete presentes"
+          for particle in circle_02 smoke_03 flame_03 flare_01 spark_01 star_01 magic_01 trace_03; do
+            test -s "public/assets/kenney-particles/$particle.png" || { echo "Falta sprite de partícula Kenney: $particle.png"; exit 1; }
+          done
+          for icon in PNG/64x64/coins/coin_gold.png PNG/64x64/icons/bomb.png PNG/128x128/icons/btn_play.png PNG/128x128/icons/btn_gift.png PNG/128x128/icons/btn_shop.png PNG/128x128/icons/btn_gear.png; do
+            test -s "public/assets/casual-mobile-ui/$icon" || { echo "Falta icono casual: $icon"; exit 1; }
+          done
+          echo "OK: sprites base, partículas Kenney, iconos casuales y atribución presentes"
 
       - name: Construir el juego web
         run: npm run build
