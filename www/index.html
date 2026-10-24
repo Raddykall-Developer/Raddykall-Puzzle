@@ -2059,6 +2059,16 @@ button { touch-action: manipulation; }
 }
 </style>
 
+
+<style id="raddykall-v39-casual-mobile-icons">
+/* Casual Mobile UI asset layer: images preserve existing control sizes and touch targets. */
+.rk-casual-asset{object-fit:contain;vertical-align:middle;-webkit-user-drag:none}
+#home .hbtn-icon .rk-casual-asset,#home .nav .rk-casual-asset{pointer-events:none}
+#home .hbtn-icon .rk-casual-asset{max-width:100%;max-height:100%}
+#home .nav .rk-casual-asset{max-width:100%;max-height:100%}
+@media(prefers-reduced-motion:reduce){.rk-casual-asset{scroll-behavior:auto}}
+</style>
+
 </head>
 <body>
 <div id="bg"><i></i><i></i><i></i><i></i><i class="hb"></i><i class="hb"></i><i class="sp" style="left:44%;top:22%;animation-delay:-1.6s;animation-duration:2.7s"></i><i class="sp" style="left:71%;top:15%;animation-delay:-1.5s;animation-duration:2.7s"></i><i class="sp" style="left:67%;top:30%;animation-delay:-0.1s;animation-duration:3.6s"></i><i class="sp" style="left:11%;top:33%;animation-delay:-0.4s;animation-duration:3.6s"></i><i class="sp" style="left:75%;top:18%;animation-delay:-3.8s;animation-duration:4.1s"></i><i class="sp" style="left:77%;top:10%;animation-delay:-2.3s;animation-duration:3.6s"></i><i class="sp" style="left:31%;top:8%;animation-delay:-2.2s;animation-duration:2.9s"></i><i class="sp" style="left:56%;top:21%;animation-delay:-2.2s;animation-duration:4.0s"></i><i class="sp" style="left:74%;top:90%;animation-delay:-0.7s;animation-duration:4.0s"></i><i class="sp" style="left:84%;top:27%;animation-delay:-1.5s;animation-duration:3.9s"></i><i class="sp" style="left:11%;top:75%;animation-delay:-0.2s;animation-duration:3.1s"></i><i class="sp" style="left:90%;top:71%;animation-delay:-1.7s;animation-duration:3.4s"></i><i class="sp" style="left:77%;top:61%;animation-delay:-1.4s;animation-duration:3.2s"></i><i class="sp" style="left:26%;top:92%;animation-delay:-3.1s;animation-duration:2.8s"></i></div>
@@ -3595,7 +3605,17 @@ Object.assign(PATHS, {
   chest: '<path d="M3 10h18v10H3z"/><path d="M3 10a9 5 0 0 1 18 0"/><path d="M12 13v3"/>'
 });
 const ICON = Object.fromEntries(Object.entries(PATHS).map(([k, d]) => [k, `<svg class="ic" viewBox="0 0 24 24" aria-hidden="true">${d}</svg>`]));
-ICON.coin = '<svg class="ic-coin" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="#ffc83a"/><circle cx="12" cy="12" r="10" fill="none" stroke="#e08a00" stroke-width="1.6"/><circle cx="12" cy="12" r="6.6" fill="none" stroke="#e8a000" stroke-width="1.3"/><path d="M12 7.6l1.4 3 3.3.4-2.4 2.3.6 3.3-2.9-1.6-2.9 1.6.6-3.3-2.4-2.3 3.3-.4z" fill="#c27800"/></svg>';
+const casualAsset = (path, cls = 'ic', size = '64x64') => `<img class="${cls} rk-casual-asset" src="assets/casual-mobile-ui/PNG/${size}/${path}.png" alt="" aria-hidden="true" draggable="false" decoding="async">`;
+ICON.coin = casualAsset('coins/coin_gold','ic-coin','64x64');
+Object.assign(ICON, {
+  bomb: casualAsset('icons/bomb'),
+  bag: casualAsset('icons/btn_shop'),
+  gift: casualAsset('icons/btn_gift'),
+  gear: casualAsset('icons/btn_gear'),
+  trophy: casualAsset('badges/trophy'),
+  target: casualAsset('icons/ticket'),
+  chest: casualAsset('icons/chest')
+});
 
 /* Ilustraciones SVG propias de la pantalla principal: volumen sin emojis ni dependencias. */
 const HOME_ICONS = {
@@ -3654,6 +3674,19 @@ const HOME_ICONS = {
     <path d="m13 12 1.4 3.2 3.2 1.4-3.2 1.4-1.4 3.2-1.4-3.2-3.2-1.4 3.2-1.4Z" fill="#91efff"/>
   </svg>`
 };
+/* Raddykall v39 — use the integrated Casual Mobile UI Icons where they improve clarity.
+   Source assets are local PNGs; no external network requests or runtime dependency. */
+Object.assign(HOME_ICONS, {
+  gift: casualAsset('icons/btn_gift','home-art home-gift-art','128x128'),
+  coin: casualAsset('coins/coin_gold','home-art home-coin-art','128x128'),
+  lv: casualAsset('badges/medal_gold','home-art','128x128'),
+  inf: casualAsset('icons/rocket','home-art','128x128'),
+  go: casualAsset('icons/btn_play','home-art','128x128'),
+  missions: casualAsset('icons/ticket','home-art nav-art','128x128'),
+  store: casualAsset('icons/btn_shop','home-art nav-art','128x128'),
+  trophy: casualAsset('badges/trophy','home-art nav-art','128x128'),
+  settings: casualAsset('icons/btn_gear','home-art nav-art settings-art','128x128')
+});
 
 const TOGGLES = [['music', 'Música'], ['sfx', 'Efectos'], ['vibe', 'Vibración'], ['timer', 'Tiempo']];
 const dockBtns = () => TOGGLES.map(([k, n]) =>
