@@ -47,7 +47,11 @@ jobs:
           for icon in PNG/64x64/coins/coin_gold.png PNG/64x64/icons/bomb.png PNG/128x128/icons/btn_play.png PNG/128x128/icons/btn_gift.png PNG/128x128/icons/btn_shop.png PNG/128x128/icons/btn_gear.png; do
             test -s "public/assets/casual-mobile-ui/$icon" || { echo "Falta icono casual: $icon"; exit 1; }
           done
-          echo "OK: sprites base, partículas Kenney, iconos casuales y atribución presentes"
+          for skybox in band dark day galaxy nebula; do
+            test -s "public/assets/kenney-skyboxes-space/mobile/skybox-space-$skybox.webp" || { echo "Falta skybox optimizado: $skybox.webp"; exit 1; }
+          done
+          grep -q "Skyboxes Space (1.0)" public/assets/kenney-skyboxes-space/License.txt
+          echo "OK: sprites, iconos, partículas, skyboxes optimizados y licencias presentes"
 
       - name: Construir el juego web
         run: npm run build
