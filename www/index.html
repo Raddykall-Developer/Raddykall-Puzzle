@@ -1663,6 +1663,53 @@ button:focus-visible, [role=button]:focus-visible{outline:3px solid #8ff2ff!impo
 @media(prefers-reduced-motion:reduce){#panel input[type="range"]::-webkit-slider-thumb{filter:none}}
 </style>
 
+<style id="raddykall-v35-layout-ads-performance">
+/* V35: espacios publicitarios preparados; no cargan anuncios falsos ni recursos externos. */
+html { -webkit-text-size-adjust: 100%; }
+body { overscroll-behavior: none; }
+#app { height: 100vh; height: 100dvh; }
+.rk-ad-slot {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  width: 100%;
+  min-width: 0;
+  min-height: 58px;
+  box-sizing: border-box;
+  padding: 7px 12px;
+  border: 1px dashed rgba(151,164,255,.32);
+  border-radius: 13px;
+  background: linear-gradient(135deg, rgba(25,31,64,.78), rgba(19,24,48,.64));
+  color: rgba(211,218,255,.64);
+  text-align: center;
+  overflow: hidden;
+}
+.rk-ad-label { font-size: 9px; line-height: 1.2; letter-spacing: 1.5px; font-weight: 900; color: rgba(173,184,255,.72); }
+.rk-ad-message { font-size: 11px; line-height: 1.25; font-weight: 650; }
+.rk-ad-home { flex: 0 0 auto; margin: 0; max-width: 100%; }
+.rk-ad-shop { min-height: 64px; margin: 4px 0 12px; }
+.rk-ad-slot:empty { display: none; }
+@media (max-height: 760px) {
+  #home { padding-top: calc(env(safe-area-inset-top,0px) + 6px); padding-bottom: calc(env(safe-area-inset-bottom,0px) + 6px); }
+  #home .hm { gap: 7px; }
+  #home .logo { height: min(22vh, 170px); margin-bottom: 0; }
+  .rk-ad-home { min-height: 43px; padding: 4px 8px; }
+  .rk-ad-home .rk-ad-message { font-size: 10px; }
+}
+@media (max-height: 650px) {
+  #home .logo { height: min(17vh, 118px); }
+  #home .hbtn { padding-top: 8px; padding-bottom: 9px; }
+  #home .hbtn b { font-size: 17px; }
+  #home .nav { padding-bottom: 2px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  #home .logo { animation: none; }
+  #home .fall i { animation: none; }
+}
+</style>
 </head>
 <body>
 <div id="bg"><i></i><i></i><i></i><i></i><i class="hb"></i><i class="hb"></i><i class="sp" style="left:44%;top:22%;animation-delay:-1.6s;animation-duration:2.7s"></i><i class="sp" style="left:71%;top:15%;animation-delay:-1.5s;animation-duration:2.7s"></i><i class="sp" style="left:67%;top:30%;animation-delay:-0.1s;animation-duration:3.6s"></i><i class="sp" style="left:11%;top:33%;animation-delay:-0.4s;animation-duration:3.6s"></i><i class="sp" style="left:75%;top:18%;animation-delay:-3.8s;animation-duration:4.1s"></i><i class="sp" style="left:77%;top:10%;animation-delay:-2.3s;animation-duration:3.6s"></i><i class="sp" style="left:31%;top:8%;animation-delay:-2.2s;animation-duration:2.9s"></i><i class="sp" style="left:56%;top:21%;animation-delay:-2.2s;animation-duration:4.0s"></i><i class="sp" style="left:74%;top:90%;animation-delay:-0.7s;animation-duration:4.0s"></i><i class="sp" style="left:84%;top:27%;animation-delay:-1.5s;animation-duration:3.9s"></i><i class="sp" style="left:11%;top:75%;animation-delay:-0.2s;animation-duration:3.1s"></i><i class="sp" style="left:90%;top:71%;animation-delay:-1.7s;animation-duration:3.4s"></i><i class="sp" style="left:77%;top:61%;animation-delay:-1.4s;animation-duration:3.2s"></i><i class="sp" style="left:26%;top:92%;animation-delay:-3.1s;animation-duration:2.8s"></i></div>
@@ -2358,7 +2405,9 @@ function renderShop() {
   shopEl.innerHTML = `<div class="sh-head"><button class="sh-back" data-a="sh_close" aria-label="Volver">‹</button><div class="sh-title"><h2>Tienda</h2><small>Personaliza tu experiencia</small></div>
       <div class="coinchip">${ICON.coin}<b class="coinval">${P.coins}</b></div></div>
     <div class="sh-tabs">${tabs}</div>
-    <div class="sh-body">${shopTab === 'missions' ? missionsHtml() : shopTab === 'dailygift' ? dailyGiftShopHtml() : shopTab === 'skins' ? skinsHtml() : themesHtml()}</div>`;
+    <div class="sh-body"><div class="rk-ad-slot rk-ad-shop" data-ad-slot="shop-banner" role="complementary" aria-label="Espacio reservado para publicidad">
+        <span class="rk-ad-label">PUBLICIDAD</span><span class="rk-ad-message">Espacio reservado para anuncio</span>
+      </div>${shopTab === 'missions' ? missionsHtml() : shopTab === 'dailygift' ? dailyGiftShopHtml() : shopTab === 'skins' ? skinsHtml() : themesHtml()}</div>`;
   shopEl.querySelector('.sh-body').scrollTop = st;
 }
 function shopEquip(kind, id) {
@@ -3693,6 +3742,9 @@ function showMenu() {
     ${modeButton('inf','inf','Modo infinito',`Récord ${P.best}`,1)}
     ${modeButton('tet','tet','Modo clásico',`Bloques que caen — Récord ${P.tbest || 0}`,6)}
 
+    <div class="rk-ad-slot rk-ad-home" data-ad-slot="home-banner" role="complementary" aria-label="Espacio reservado para publicidad">
+      <span class="rk-ad-label">PUBLICIDAD</span><span class="rk-ad-message">Espacio reservado para anuncio</span>
+    </div>
     ${homeNav()}
     <div class="ver">Raddykall Puzzle · v${CONFIG.APP_VERSION}</div>
   </div>`;
