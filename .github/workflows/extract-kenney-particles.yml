@@ -15,34 +15,42 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Extract particle sprites
+      - name: Extract transparent particle sprites
         shell: bash
         run: |
           set -euo pipefail
           rm -rf /tmp/kenney-particles www/assets/kenney-particles
           mkdir -p /tmp/kenney-particles www/assets/kenney-particles
           unzip -q kenney_particle-pack.zip -d /tmp/kenney-particles
-          echo "Top-level archive contents:"
-          find /tmp/kenney-particles -maxdepth 2 -type f | sed 's#^/tmp/kenney-particles/##' | head -80
-          count=$(find /tmp/kenney-particles -type f \( -iname '*.png' -o -iname '*.webp' -o -iname '*.jpg' -o -iname '*.json' \) | wc -l)
+          echo "Top-level archive files:"
+          find /tmp/kenney-particles -maxdepth 2 -type f | sed -n '1,80p'
+          # Prefer transparent PNGs; black-background variants would create dark rectangles in-game.
+          find /tmp/kenney-particles -type f -path '*/PNG (Transparent)/*.png' -print0 > /tmp/transparent-pngs.list
+          if [ ! -s /tmp/transparent-pngs.list ]; then
+            echo "No PNG (Transparent) directory found; falling back to PNGs outside black-background folders."
+            find /tmp/kenney-particles -type f -iname '*.png' ! -path '*/PNG (Black background)/*' -print0 > /tmp/transparent-pngs.list
+          fi
+          count=$(tr -cd '\0' < /tmp/transparent-pngs.list | wc -c)
           test "$count" -gt 0
-          # Keep image sprites and small metadata only; exclude source archives and editor files.
           while IFS= read -r -d '' file; do
-            rel="${file#/tmp/kenney-particles/}"
-            mkdir -p "www/assets/kenney-particles/$(dirname "$rel")"
-            cp "$file" "www/assets/kenney-particles/$rel"
-          done < <(find /tmp/kenney-particles -type f \( -iname '*.png' -o -iname '*.webp' -o -iname '*.jpg' -o -iname '*.json' -o -iname 'license*' -o -iname 'readme*' -o -iname 'credits*' \) -print0)
-          echo "Extracted image and metadata files: $count"
-          echo "PNG sprite samples:"
-          find www/assets/kenney-particles -type f -iname '*.png' | sort | head -100
+            cp "$file" "www/assets/kenney-particles/$(basename "$file")"
+          done < /tmp/transparent-pngs.list
+          # Preserve the pack's license and basic documentation, but not the original archive.
+          find /tmp/kenney-particles -type f \( -iname 'license*' -o -iname 'readme*' -o -iname 'credits*' \) -print0 |
+          while IFS= read -r -d '' file; do
+            cp "$file" "www/assets/kenney-particles/$(basename "$file")"
+          done
+          echo "Extracted transparent PNG sprites: $count"
+          find www/assets/kenney-particles -type f -iname '*.png' -print | sort > /tmp/extracted-sprites.list
+          sed -n '1,100p' /tmp/extracted-sprites.list
       - name: Commit extracted particle assets
         run: |
           git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config user.email "41898282+actions-bot@users.noreply.github.com"
           git add www/assets/kenney-particles
           if git diff --cached --quiet; then
             echo "No particle asset changes to commit."
           else
-            git commit -m "Extract Kenney particle pack into game assets"
+            git commit -m "Extract transparent Kenney particle sprites"
             git push
           fi
