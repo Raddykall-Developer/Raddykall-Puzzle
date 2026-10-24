@@ -1,0 +1,35 @@
+name: Extract Casual Mobile UI Icons
+on:
+  push:
+    paths:
+      - 'Casual_Mobile_UI_Icons_v1.0.zip'
+      - '.github/workflows/extract-casual-ui-icons.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  extract-assets:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Extract icon pack into game assets
+        run: |
+          mkdir -p www/assets/casual-mobile-ui
+          unzip -o Casual_Mobile_UI_Icons_v1.0.zip -d www/assets/casual-mobile-ui
+          test -n "$(find www/assets/casual-mobile-ui -type f -name '*.png' -print -quit)"
+          echo "Extracted PNG files: $(find www/assets/casual-mobile-ui -type f -name '*.png' | wc -l)"
+          find www/assets/casual-mobile-ui -maxdepth 2 -type f | head -40
+      - name: Commit extracted assets
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add www/assets/casual-mobile-ui
+          if git diff --cached --quiet; then
+            echo "No asset changes to commit."
+          else
+            git commit -m "Extract casual mobile UI icon pack into game assets"
+            git push
+          fi
