@@ -1719,6 +1719,68 @@ button .ic{transition:transform .12s ease,opacity .12s ease}
 button:active .ic{transform:scale(.94)}
 @media(prefers-reduced-motion:reduce){button .ic{transition:none!important}}
 </style>
+
+<style id="raddykall-v37-mobile-safe-layout">
+/* V37: keep every control inside the real usable phone viewport. */
+*,*::before,*::after{box-sizing:border-box}
+html,body{width:100%;min-height:0;height:100%;overflow:hidden}
+#app{
+  height:100vh;height:100dvh;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+  box-sizing:border-box;
+  min-height:0;
+}
+#hud{flex:0 0 auto;padding-top:clamp(7px,1.2vh,12px)}
+#stage{flex:1 1 0;min-height:0;overflow:hidden}
+#tools{
+  flex:0 0 auto;
+  padding:7px 10px calc(8px + env(safe-area-inset-bottom,0px));
+  gap:clamp(5px,1.5vw,8px);
+}
+.tool{min-height:54px;padding:7px 3px 6px;overflow:visible}
+.tool .ic{width:clamp(20px,5.5vw,24px);height:clamp(20px,5.5vw,24px)}
+.tool small{font-size:clamp(9px,2.7vw,10.5px);line-height:1.15}
+.tool .bd{top:-4px;right:-2px;min-width:19px;height:19px;line-height:19px;font-size:11px}
+#time,#goal{flex:0 0 auto}
+#home{
+  overflow-y:auto;overflow-x:hidden;
+  align-items:stretch;justify-content:flex-start;
+  -webkit-overflow-scrolling:touch;
+  padding-top:calc(env(safe-area-inset-top,0px) + 10px);
+  padding-bottom:calc(env(safe-area-inset-bottom,0px) + 18px);
+}
+#home .hm{
+  flex:0 0 auto;
+  width:min(100%,380px);
+  margin:auto;
+  gap:clamp(7px,1.4vh,12px);
+}
+#home .logo{flex:0 1 auto;max-height:29vh}
+#home .nav{flex:0 0 auto;padding-bottom:4px;margin-bottom:2px}
+#home .nav button{min-width:0;min-height:58px}
+.rk-ad-home{max-height:76px}
+#shop,#page{padding-bottom:env(safe-area-inset-bottom,0px)}
+.sh-body{padding-bottom:calc(18px + env(safe-area-inset-bottom,0px))}
+#panel{padding-bottom:calc(16px + env(safe-area-inset-bottom,0px))}
+@media(max-height:760px){
+  #home .hm{gap:7px}
+  #home .logo{height:min(20vh,155px);max-height:20vh}
+  #home .nav button{min-height:52px;padding-top:6px;padding-bottom:5px}
+  #home .hbtn{padding-top:9px;padding-bottom:10px}
+  .rk-ad-home{min-height:38px;max-height:48px}
+}
+@media(max-height:680px){
+  #hud{padding-top:4px;padding-bottom:2px}
+  #score{font-size:clamp(30px,6vh,40px)}
+  #tools{padding-top:4px;padding-bottom:calc(5px + env(safe-area-inset-bottom,0px))}
+  .tool{min-height:46px;padding-top:4px;padding-bottom:3px}
+  .tool small{font-size:9px}
+  #home .logo{height:min(15vh,105px);max-height:15vh}
+  #home .nav button{min-height:46px}
+}
+@media(prefers-reduced-motion:reduce){#home .logo{animation:none}}
+</style>
 </head>
 <body>
 <div id="bg"><i></i><i></i><i></i><i></i><i class="hb"></i><i class="hb"></i><i class="sp" style="left:44%;top:22%;animation-delay:-1.6s;animation-duration:2.7s"></i><i class="sp" style="left:71%;top:15%;animation-delay:-1.5s;animation-duration:2.7s"></i><i class="sp" style="left:67%;top:30%;animation-delay:-0.1s;animation-duration:3.6s"></i><i class="sp" style="left:11%;top:33%;animation-delay:-0.4s;animation-duration:3.6s"></i><i class="sp" style="left:75%;top:18%;animation-delay:-3.8s;animation-duration:4.1s"></i><i class="sp" style="left:77%;top:10%;animation-delay:-2.3s;animation-duration:3.6s"></i><i class="sp" style="left:31%;top:8%;animation-delay:-2.2s;animation-duration:2.9s"></i><i class="sp" style="left:56%;top:21%;animation-delay:-2.2s;animation-duration:4.0s"></i><i class="sp" style="left:74%;top:90%;animation-delay:-0.7s;animation-duration:4.0s"></i><i class="sp" style="left:84%;top:27%;animation-delay:-1.5s;animation-duration:3.9s"></i><i class="sp" style="left:11%;top:75%;animation-delay:-0.2s;animation-duration:3.1s"></i><i class="sp" style="left:90%;top:71%;animation-delay:-1.7s;animation-duration:3.4s"></i><i class="sp" style="left:77%;top:61%;animation-delay:-1.4s;animation-duration:3.2s"></i><i class="sp" style="left:26%;top:92%;animation-delay:-3.1s;animation-duration:2.8s"></i></div>
