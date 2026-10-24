@@ -979,6 +979,74 @@ body[data-gfx="2"] #bg i.sp{ opacity:0; }
 
 
 
+
+/* ===== HOTFIX MOBILE: viewport real, contenido completo y controles accesibles ===== */
+*,*::before,*::after{box-sizing:border-box}
+html,body{width:100%;height:100%;min-height:0}
+body{overscroll-behavior:none}
+#app{
+  height:100vh;height:100dvh;min-height:0;
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+#stage{flex:1 1 0%;min-height:0}
+#hud,#time,#goal,#tools,#banner{flex-shrink:0}
+#tools{padding-bottom:calc(7px + env(safe-area-inset-bottom,0px))}
+#tools .tool{min-height:58px}
+#toast{bottom:calc(150px + env(safe-area-inset-bottom,0px));max-width:calc(100vw - 28px);white-space:normal;text-align:center}
+#home{
+  height:100vh;height:100dvh;
+  min-height:0;
+  padding-top:calc(env(safe-area-inset-top,0px) + 8px);
+  padding-bottom:calc(env(safe-area-inset-bottom,0px) + 8px);
+  overflow-x:hidden;overflow-y:auto;
+  -webkit-overflow-scrolling:touch;
+}
+#home .hm{
+  height:auto;min-height:100%;
+  flex:0 0 auto;
+  justify-content:flex-start;
+  gap:clamp(6px,1.15vh,11px);
+  padding-top:8px;padding-bottom:8px;
+}
+#home .hbar{flex-shrink:0}
+#home .logo{flex-shrink:0;height:clamp(88px,17vh,158px);max-height:158px}
+#home .hbtn{flex-shrink:0;min-height:clamp(52px,7.4vh,66px);padding:9px 14px}
+#home .nav{flex-shrink:0;margin-top:3px}
+#home .nav button{min-height:56px}
+#home .ver{flex-shrink:0;margin:0 0 2px}
+#page,#shop,#tetris{height:100vh;height:100dvh;min-height:0;overflow:hidden}
+#page{padding-bottom:env(safe-area-inset-bottom,0px)}
+#page .nav{flex-shrink:0}
+#tetris{padding-bottom:env(safe-area-inset-bottom,0px)}
+#tstage{flex:1 1 0%;min-height:0}
+#tpad{flex-shrink:0;padding-bottom:calc(6px + env(safe-area-inset-bottom,0px))}
+button{touch-action:manipulation}
+@media(max-height:700px){
+  #home .hm{gap:6px;padding-top:3px;padding-bottom:3px}
+  #home .logo{height:clamp(72px,13vh,100px)}
+  #home .hbtn{min-height:49px;padding:7px 12px}
+  #home .hbtn b{font-size:17px}
+  #home .hbtn small{font-size:11px;margin-top:2px}
+  #home .nav button{min-height:49px;padding:6px 2px}
+  #home .nav .ic{width:20px;height:20px}
+  #home .nav small{font-size:10px}
+}
+@media(max-width:380px){
+  #home{padding-left:12px;padding-right:12px}
+  #home .hbar{gap:6px}
+  #home .prof{padding-left:5px;padding-right:7px;gap:7px}
+  #home .av.sm{width:36px;height:36px;font-size:15px}
+  #home .prof .pf b{font-size:13px}
+  #home .prof .pf small{font-size:10px}
+  #home .coinchip.home{min-height:40px;padding:0 7px;font-size:12px}
+  #home .nav{gap:5px}
+  #home .nav button{border-radius:13px}
+  #tools{gap:5px;padding-left:6px;padding-right:6px}
+  #tools .tool{min-height:55px;padding:6px 3px}
+  #tools .tool .ic{width:21px;height:21px}
+  #tools .tool small{font-size:10px}
+}
+
 </style>
 
 <style id="raddykall-v7-polish">
