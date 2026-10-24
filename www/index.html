@@ -2115,6 +2115,90 @@ html[data-gtheme="ember"] #bg:after{
 @media(prefers-reduced-motion:reduce){#bg:after{transition:none}}
 </style>
 
+
+<style id="raddykall-v41-kenney-space-skyboxes">
+/* Mobile-friendly Kenney skyboxes: subdued overlays preserve text contrast and board clarity.
+   Runtime uses optimized local WebP files, not the multi-megabyte source PNGs. */
+html[data-gtheme="night"] body,
+html[data-gtheme="cocoa"] body,
+html[data-gtheme="slate"] body{
+  background-color:var(--bg)!important;
+  background-image:linear-gradient(180deg,rgba(5,8,27,.48),rgba(7,8,28,.78)),url("assets/kenney-skyboxes-space/mobile/skybox-space-dark.webp")!important;
+  background-size:cover!important;background-position:center center!important;background-repeat:no-repeat!important;background-attachment:fixed;
+}
+html[data-gtheme="galaxy3d"] body,
+html[data-gtheme="galaxy3d"] #home{
+  background-color:var(--bg)!important;
+  background-image:linear-gradient(180deg,rgba(9,8,38,.42),rgba(13,7,38,.74)),url("assets/kenney-skyboxes-space/mobile/skybox-space-galaxy.webp")!important;
+  background-size:cover!important;background-position:center center!important;background-repeat:no-repeat!important;background-attachment:fixed;
+}
+html[data-gtheme="aurora"] body,
+html[data-gtheme="lavender"] body,
+html[data-gtheme="rose"] body,
+html[data-gtheme="aurora"] #home,
+html[data-gtheme="lavender"] #home,
+html[data-gtheme="rose"] #home{
+  background-color:var(--bg)!important;
+  background-image:linear-gradient(180deg,rgba(8,13,38,.45),rgba(14,7,35,.76)),url("assets/kenney-skyboxes-space/mobile/skybox-space-nebula.webp")!important;
+  background-size:cover!important;background-position:center center!important;background-repeat:no-repeat!important;background-attachment:fixed;
+}
+html[data-gtheme="crystal"] body,
+html[data-gtheme="quartz"] body,
+html[data-gtheme="forest"] body,
+html[data-gtheme="mint"] body,
+html[data-gtheme="ivory"] body,
+html[data-gtheme="sand"] body,
+html[data-gtheme="auto"] body{
+  background-color:var(--bg)!important;
+  background-image:linear-gradient(180deg,rgba(12,25,48,.43),rgba(10,20,42,.72)),url("assets/kenney-skyboxes-space/mobile/skybox-space-day.webp")!important;
+  background-size:cover!important;background-position:center center!important;background-repeat:no-repeat!important;background-attachment:fixed;
+}
+html[data-gtheme="crystal"] #home,
+html[data-gtheme="quartz"] #home,
+html[data-gtheme="forest"] #home,
+html[data-gtheme="mint"] #home,
+html[data-gtheme="ivory"] #home,
+html[data-gtheme="sand"] #home,
+html[data-gtheme="auto"] #home{
+  background-color:var(--bg)!important;
+  background-image:linear-gradient(180deg,rgba(9,15,38,.52),rgba(12,8,36,.82)),url("assets/kenney-skyboxes-space/mobile/skybox-space-day.webp")!important;
+  background-size:cover!important;background-position:center center!important;background-repeat:no-repeat!important;
+}
+html[data-gtheme="ember"] body,
+html[data-gtheme="sunset"] body,
+html[data-gtheme="ember"] #home,
+html[data-gtheme="sunset"] #home{
+  background-color:var(--bg)!important;
+  background-image:linear-gradient(180deg,rgba(26,10,28,.46),rgba(14,8,30,.79)),url("assets/kenney-skyboxes-space/mobile/skybox-space-band.webp")!important;
+  background-size:cover!important;background-position:center center!important;background-repeat:no-repeat!important;background-attachment:fixed;
+}
+/* Theme cards show their actual skybox, while accent chips remain easy to distinguish. */
+.tp[data-theme-art="night"],.tp[data-theme-art="cocoa"],.tp[data-theme-art="slate"]{
+  background-image:linear-gradient(rgba(8,11,32,.34),rgba(8,8,28,.72)),url("assets/kenney-skyboxes-space/mobile/skybox-space-dark.webp")!important;
+  background-size:cover!important;background-position:center!important;
+}
+.tp[data-theme-art="galaxy3d"]{
+  background-image:linear-gradient(rgba(13,8,38,.28),rgba(13,8,38,.54)),url("assets/kenney-skyboxes-space/mobile/skybox-space-galaxy.webp")!important;
+  background-size:cover!important;background-position:center!important;
+}
+.tp[data-theme-art="aurora"],.tp[data-theme-art="lavender"],.tp[data-theme-art="rose"]{
+  background-image:linear-gradient(rgba(14,12,38,.3),rgba(14,8,32,.6)),url("assets/kenney-skyboxes-space/mobile/skybox-space-nebula.webp")!important;
+  background-size:cover!important;background-position:center!important;
+}
+.tp[data-theme-art="crystal"],.tp[data-theme-art="quartz"],.tp[data-theme-art="forest"],.tp[data-theme-art="mint"],.tp[data-theme-art="ivory"],.tp[data-theme-art="sand"],.tp[data-theme-art="auto"]{
+  background-image:linear-gradient(rgba(12,26,48,.32),rgba(10,20,42,.61)),url("assets/kenney-skyboxes-space/mobile/skybox-space-day.webp")!important;
+  background-size:cover!important;background-position:center!important;
+}
+.tp[data-theme-art="ember"],.tp[data-theme-art="sunset"]{
+  background-image:linear-gradient(rgba(26,10,28,.3),rgba(14,8,30,.6)),url("assets/kenney-skyboxes-space/mobile/skybox-space-band.webp")!important;
+  background-size:cover!important;background-position:center!important;
+}
+.tp[data-theme-art] .b{background:rgba(9,12,35,.46)!important;box-shadow:inset 0 0 0 1px rgba(255,255,255,.09)}
+.tp[data-theme-art] .b i{opacity:.9}
+.tp[data-theme-art] .a{box-shadow:0 2px 8px rgba(0,0,0,.27)}
+@media(prefers-reduced-motion:reduce){html[data-gtheme] body{background-attachment:scroll}}
+</style>
+
 </head>
 <body>
 <div id="bg"><i></i><i></i><i></i><i></i><i class="hb"></i><i class="hb"></i><i class="sp" style="left:44%;top:22%;animation-delay:-1.6s;animation-duration:2.7s"></i><i class="sp" style="left:71%;top:15%;animation-delay:-1.5s;animation-duration:2.7s"></i><i class="sp" style="left:67%;top:30%;animation-delay:-0.1s;animation-duration:3.6s"></i><i class="sp" style="left:11%;top:33%;animation-delay:-0.4s;animation-duration:3.6s"></i><i class="sp" style="left:75%;top:18%;animation-delay:-3.8s;animation-duration:4.1s"></i><i class="sp" style="left:77%;top:10%;animation-delay:-2.3s;animation-duration:3.6s"></i><i class="sp" style="left:31%;top:8%;animation-delay:-2.2s;animation-duration:2.9s"></i><i class="sp" style="left:56%;top:21%;animation-delay:-2.2s;animation-duration:4.0s"></i><i class="sp" style="left:74%;top:90%;animation-delay:-0.7s;animation-duration:4.0s"></i><i class="sp" style="left:84%;top:27%;animation-delay:-1.5s;animation-duration:3.9s"></i><i class="sp" style="left:11%;top:75%;animation-delay:-0.2s;animation-duration:3.1s"></i><i class="sp" style="left:90%;top:71%;animation-delay:-1.7s;animation-duration:3.4s"></i><i class="sp" style="left:77%;top:61%;animation-delay:-1.4s;animation-duration:3.2s"></i><i class="sp" style="left:26%;top:92%;animation-delay:-3.1s;animation-duration:2.8s"></i></div>
