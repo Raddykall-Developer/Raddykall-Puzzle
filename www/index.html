@@ -4873,7 +4873,6 @@ const KENNEY_PARTICLE_FILES = Object.freeze({
   circle: 'circle_02.png',
   smoke: 'smoke_03.png',
   flame: 'flame_03.png',
-  fire: 'fire_01.png',
   flare: 'flare_01.png',
   spark: 'spark_01.png',
   star: 'star_01.png',
@@ -4906,7 +4905,7 @@ function drawKenneyParticle(target, key, x, y, w, h, rotation = 0, alpha = 1, ad
   return true;
 }
 // Start loading a small curated subset asynchronously; no external URLs or per-frame DOM nodes.
-['circle','smoke','flame','fire','flare','spark','star','magic','trace'].forEach(kenneyParticleImage);
+['circle','smoke','flame','flare','spark','star','magic','trace'].forEach(kenneyParticleImage);
 
 function burst(x, y, color, n, spd) {                 // impactos, colocación y limpieza de bloques
   if (REDUCED) return;
@@ -4916,7 +4915,7 @@ function burst(x, y, color, n, spd) {                 // impactos, colocación y
     const a = Math.random() * 6.283, v = s * (2 + Math.random() * spd);
     const shape = G.add && i % 4 === 3 ? 3 : i % 3;
     const sprite = shape === 3 ? 'flare' :
-      shape === 0 ? (i % 5 === 0 ? 'smoke' : 'circle') :
+      shape === 0 ? (n >= 8 && i % 5 === 0 ? 'smoke' : 'circle') :
       shape === 1 ? (i % 2 === 0 ? 'star' : 'magic') :
       (i % 2 === 0 ? 'spark' : 'trace');
     S.parts.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - s * 2, rot: Math.random() * 6,
@@ -5558,7 +5557,7 @@ function tetBurst(x, y, color, n) {
   for (let i = 0; i < n && TET.parts.length < G.cap; i++) {
     const a = Math.random() * 6.283, v = TL.cell * (1.5 + Math.random() * 4);
     const sh = G.add && i % 4 === 3 ? 3 : i % 3;
-    const sprite = sh === 3 ? 'flare' : sh === 0 ? (i % 5 === 0 ? 'smoke' : 'circle') :
+    const sprite = sh === 3 ? 'flare' : sh === 0 ? (n >= 8 && i % 5 === 0 ? 'smoke' : 'circle') :
       sh === 1 ? (i % 2 === 0 ? 'star' : 'magic') : (i % 2 === 0 ? 'spark' : 'trace');
     TET.parts.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - TL.cell * 1.5, rot: Math.random() * 6, vr: (Math.random() - 0.5) * 12,
       sz: TL.cell * (0.08 + Math.random() * 0.12), col: color, t: performance.now(), life: 500 + Math.random() * 500, sh, sprite });
