@@ -128,3 +128,38 @@ body.admob-banner-active #tpad { padding-bottom: 8px !important; }
 @media (prefers-reduced-motion: reduce) {
   #shop *, #tools * { animation: none !important; transition: none !important; }
 }
+
+
+/* Android edge-to-edge guard.
+   Some WebViews report safe-area-inset-bottom as 0 even while gesture or
+   3-button navigation is visible. Keep at least 28px clear; when a native
+   AdMob banner is shown, its height is added rather than overlapping it. */
+:root { --rk-system-bottom-clearance: max(env(safe-area-inset-bottom, 0px), 28px); }
+body {
+  padding-bottom: var(--rk-system-bottom-clearance) !important;
+}
+body.admob-banner-active #app {
+  height: calc(100% - var(--admob-banner-height, 50px)) !important;
+  max-height: calc(100% - var(--admob-banner-height, 50px)) !important;
+}
+#home, #shop, #page, #tetris {
+  bottom: var(--rk-system-bottom-clearance) !important;
+  height: auto !important;
+  max-height: calc(100dvh - var(--rk-system-bottom-clearance)) !important;
+}
+body.admob-banner-active #home,
+body.admob-banner-active #shop,
+body.admob-banner-active #page,
+body.admob-banner-active #tetris {
+  bottom: calc(var(--rk-system-bottom-clearance) + var(--admob-banner-height, 50px)) !important;
+  max-height: calc(100dvh - var(--rk-system-bottom-clearance) - var(--admob-banner-height, 50px)) !important;
+}
+#shop .sh-body {
+  padding-bottom: calc(18px + var(--rk-system-bottom-clearance)) !important;
+}
+#quick .qs {
+  padding-bottom: calc(18px + var(--rk-system-bottom-clearance)) !important;
+}
+body.admob-banner-active #shop .sh-body {
+  padding-bottom: calc(14px + var(--rk-system-bottom-clearance)) !important;
+}
