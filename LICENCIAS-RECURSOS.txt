@@ -6,11 +6,14 @@ Los PNG de `public/assets/kenney-particles/` proceden de Particle Pack (1.1), de
 2. Casual Mobile UI Icons
 Los recursos de `public/assets/casual-mobile-ui/` proceden de Casual Mobile UI Icons, de reodesuxz, suministrado por el usuario del proyecto. Los términos del paquete permiten uso personal y comercial y modificaciones; prohíben redistribuir los archivos como paquete o biblioteca de recursos independiente. Se conserva la licencia original del paquete en los recursos extraídos.
 
-3. Block Puzzle Kit Free
+3. Kenney Skyboxes Space
+Las imágenes fuente de `public/assets/kenney-skyboxes-space/Skyboxes/` proceden de Skyboxes Space (1.0), de Kenney (Kenney.nl), bajo licencia Creative Commons Zero (CC0). Se conserva la licencia original en `public/assets/kenney-skyboxes-space/License.txt`. Las imágenes WebP de `public/assets/kenney-skyboxes-space/mobile/` son versiones optimizadas de los originales, creadas para reducir el tamaño de descarga y consumo de memoria en móviles.
+
+4. Block Puzzle Kit Free
 Los recursos de `public/assets/themes/block-puzzle-kit-free/` proceden de Block Puzzle Kit Free, de heyheythere, bajo licencia CC BY 4.0. Crédito: “Block Puzzle Kit Free by heyheythere” — https://heyheythere.itch.io/block-puzzle-kit-free. La licencia y la referencia están incluidas en `public/assets/themes/block-puzzle-kit-free/LICENSE.txt`.
 
-4. Logo del launcher de Android
+5. Logo del launcher de Android
 `public/assets/branding/raddykall-launcher-source.jpg` es el logotipo proporcionado por el usuario para identificar Raddykall Puzzle. El flujo de compilación genera a partir de esa imagen los iconos PNG adaptativos y de compatibilidad para Android dentro del directorio temporal de compilación.
 
-5. Herramientas
+6. Herramientas
 Capacitor, Vite, Pillow y GitHub Actions son herramientas de terceros y conservan sus propias licencias y términos. Este proyecto no afirma estar afiliado oficialmente con ellas.
