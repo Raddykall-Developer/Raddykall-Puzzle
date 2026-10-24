@@ -40,6 +40,9 @@ jobs:
           while IFS= read -r -d '' file; do
             cp "$file" "www/assets/kenney-particles/$(basename "$file")"
           done
+          # Vite/Capacitor packages static public/ assets into dist/; keep www/ and public/ in sync.
+          mkdir -p public/assets/kenney-particles
+          cp -a www/assets/kenney-particles/. public/assets/kenney-particles/
           echo "Extracted transparent PNG sprites: $count"
           find www/assets/kenney-particles -type f -iname '*.png' -print | sort > /tmp/extracted-sprites.list
           sed -n '1,100p' /tmp/extracted-sprites.list
@@ -47,7 +50,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+actions-bot@users.noreply.github.com"
-          git add www/assets/kenney-particles
+          git add www/assets/kenney-particles public/assets/kenney-particles
           if git diff --cached --quiet; then
             echo "No particle asset changes to commit."
           else
