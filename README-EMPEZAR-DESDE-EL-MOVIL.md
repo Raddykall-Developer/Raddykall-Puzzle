@@ -19,7 +19,11 @@ La primera compilación puede tardar varios minutos. La APK `debug` sirve para p
 
 ## Desarrollo y estructura
 
-- `www/index.html`: juego actual. Se mantiene junto para minimizar riesgos en esta primera transición.
+- `www/index.html`: estructura de pantallas y carga de recursos.
+- `www/ui.css`: estilos existentes extraídos en su orden original.
+- `www/ui-quality.css`: capa final aislada para corregir encuadre móvil, controles, tienda y espacio del anuncio.
+- `www/game.js`: lógica del juego y renderizado Canvas 2D existente.
+- `www/language.js`: traducciones y selección de idioma.
 - `www/assets/kenney/`: imágenes del paquete Kenney referenciadas por ruta relativa.
 - `package.json`: dependencias y comandos de desarrollo.
 - `capacitor.config.json`: identidad y configuración del contenedor Android.
@@ -41,8 +45,9 @@ npm run android:sync
 
 ## Límites conocidos
 
-- No se ha ejecutado aquí una compilación Android completa ni una prueba visual en el dispositivo del usuario.
-- Este primer paso empaqueta el juego web existente dentro de una app Android; no reescribe todavía la lógica en módulos JavaScript. La migración gradual reduce el riesgo de perder modos, progreso o funciones.
+- Esta refactorización separa la hoja de estilos y los dos scripts principales del HTML monolítico, conserva el orden de la cascada y mantiene la lógica de juego existente.
+- El tablero principal ya utiliza Canvas 2D. Antes de reemplazarlo por otro motor, se corrigen el cálculo del área útil, la indicación de la bomba y los controles; una migración a Godot/Unity exigiría reescribir la lógica y la integración de anuncios.
+- GitHub Actions valida ahora la sintaxis de los scripts y compila el APK. La validación final del aspecto y de los anuncios cargados requiere probar la APK en un Android real.
 - No subir claves de firma, contraseñas ni secretos al repositorio. Para publicar en Google Play hará falta configurar firma segura y generar un AAB de release.
 - Si GitHub Actions no puede descargar dependencias o cambia algún requisito de Android, revisar el registro de la ejecución y ajustar las versiones.
 

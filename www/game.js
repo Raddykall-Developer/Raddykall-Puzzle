@@ -1,0 +1,3844 @@
+
+(() => {
+'use strict';
+const $ = id => document.getElementById(id), ov = $('ov');
+
+/* =====================================================================
+   1. CONFIG  ·  Todo lo ajustable vive aquí (y en el panel ⚙)
+   ===================================================================== */
+const CONFIG = {
+  // --- Juego ---
+  GRID_SIZE: 9,               // grilla inmersiva 9×9: celdas un 10–12% mayores; ajustable hasta 10 (↻ reinicia)
+  PIECES_PER_TURN: 3,        // piezas en bandeja (↻ reinicia)
+  SMART_PIECES: 1,           // 1 = garantiza que al menos una pieza quepa
+  DRAG_OFFSET_CELLS: 2,      // elevación de la pieza sobre el dedo
+  TRAY_SCALE: 0.62,          // tamaño de piezas en bandeja
+  CLEAR_ANIM_MS: 350,        // animación de limpieza
+  // --- Efectos visuales ---
+  PARTICLES: 1,              // multiplicador de partículas (0 = apagadas)
+  SHAKE_PX: 4,               // intensidad del temblor de pantalla (0 = nada)
+  CLEAR_STAGGER_MS: 22,      // retraso en cascada al limpiar (efecto onda)
+  SHOW_PRAISE: 1,            // textos ¡Dulce! ¡Delicioso! ¡Divino!...
+  COMBO_GLOW: 1,             // resplandor del tablero durante la racha
+  AMBIENT_FX: 1,             // burbujas de fondo
+  PERFECT_BONUS: 60,         // puntos por dejar el tablero vacío
+  FIRE: 1,                   // llamas alrededor del tablero durante la racha
+  FIRE_AMOUNT: 1,            // cantidad de fuego (x)
+  // --- Puntos ---
+  POINTS_PER_CELL: 1,
+  POINTS_PER_LINE: 10,
+  MULTILINE_BONUS: 0.5,      // extra por cada línea simultánea adicional
+  COMBO_STEP: 0.25,          // +multiplicador por jugada consecutiva con limpieza
+  COMBO_MAX: 3,
+  // --- Dificultad progresiva ---
+  LEVEL_EVERY_POINTS: 150,   // puntos para subir de nivel
+  MAX_LEVEL: 10,
+  DIFF_BIAS: 0.06,            // cuánto favorece piezas grandes por nivel (0 = nada)
+  SMART_UNTIL_LEVEL: 9999,   // ayuda inteligente activa en todos los niveles
+  SMART_SOLVABLE: 1,         // 1 = las 3 piezas de cada tanda se pueden colocar (en algún orden)
+  HELP_CHANCE: 1.0,          // 100%: cada tanda intenta incluir una pieza que ayuda a completar línea
+  HELP_FULL_BOOST: 0.6,      // + prob. cuanto más lleno está el tablero
+  RELIEF_BIAS: 1.2,          // con el tablero lleno salen más piezas pequeñas
+  // --- Sonido ---
+  MUSIC_VOL: 0.55,
+  SFX_VOL: 0.6,
+  MUSIC_BPM: 76,             // tempo base (relajado)
+  MUSIC_BPM_PER_LEVEL: 1,    // acelera muy poco con el nivel
+  MUSIC_REVERB: 0.5,         // cantidad de reverb / ambiente
+  // --- Anuncios / revivir / skins ---
+  SHOW_BANNER: 0,
+  BANNER_HEIGHT: 56,
+  INTERSTITIAL_EVERY: 0,     // no interrumpir partidas hasta conectar anuncios nativos reales
+  INTERSTITIAL_SECONDS: 3,
+  REWARDED_SECONDS: 3,
+  REVIVES_PER_GAME: 1,       // revivir con anuncio por partida
+  REVIVE_ROWS: 3,            // filas que se limpian al revivir
+  UNLOCK_ALL: 0,             // 1 = todo desbloqueado en la tienda (para probar)
+  // --- Perfil y extras ---
+  SPLASH_MS: 1200,           // pantalla de carga al abrir la app (0 = sin pantalla)
+  CHAPTER_SIZE: 10,          // niveles por capítulo (cada capítulo tiene un cofre)
+  CHEST_COINS: 40,           // monedas del cofre del capítulo 1 (+10 por capítulo)
+  APP_VERSION: '1.6.0',
+  STORE_URL: '',             // enlace de la tienda: se añade al compartir
+  PRIVACY_URL: '',           // política de privacidad completa (se enlaza en Ajustes)
+  // --- Tienda y monedas ---
+  COIN_X: 1,                 // multiplicador de TODAS las monedas ganadas (misiones, partidas, anuncios)
+  COIN_RATE: 80,             // puntos por moneda al terminar una partida infinita
+  COIN_CAP: 30,              // máximo de monedas por partida
+  COIN_AD: 30,               // monedas por ver un anuncio en la tienda
+  COIN_AD_PER_DAY: 3,        // anuncios de monedas por día
+  // --- Modo niveles ---
+  LEVEL_COUNT: 60,           // niveles disponibles
+  LEVEL_TARGET_X: 1,         // multiplicador de metas (más alto = más difícil)
+  LEVEL_MOVES_X: 1,          // multiplicador de jugadas permitidas (más alto = más fácil)
+  LEVEL_MAX_FILL: 20,        // máximo de bloques iniciales (obstáculos)
+  REVIVE_MOVES: 5,           // jugadas extra al ver el anuncio en niveles
+  LEVELS_OPEN: 0,            // 1 = todos los niveles abiertos (para probar)
+  // --- Herramientas ---
+  TOOL_UNDO: 2,              // cargas iniciales por partida
+  TOOL_SHUFFLE: 2,
+  TOOL_BOMB: 1,
+  TOOL_ROTATE: 3,            // Girar: 1 carga = girar piezas de la bandeja hasta colocar una
+  TOOL_MAX: 5,               // máximo de cargas por herramienta
+  BOMB_RADIUS: 1,            // 1 = área de 3×3
+  // --- Reloj (se activa/desactiva desde el menú) ---
+  LINE_TIME_S: 60,           // segundos para limpiar una línea
+  TIME_DECAY: 2,             // segundos menos por nivel de dificultad
+  TIME_MIN: 30,              // mínimo de segundos
+  // --- Modo clásico (bloques que caen) ---
+  TET_START_LEVEL: 1,        // nivel inicial (más alto = más rápido)
+  TET_LINES_PER_LEVEL: 10,   // líneas para subir de nivel
+  TET_SPEED_X: 1,            // multiplicador de la velocidad de caída
+  TET_SOFT_X: 15,            // cuánto más rápido cae al mantener ▼
+  TET_LOCK_MS: 450,          // tiempo para deslizar la pieza antes de fijarse
+  TET_CLEAR_MS: 260,         // duración de la animación de líneas
+  TET_NEXT: 3,               // piezas siguientes visibles
+  TET_HOLD: 1,               // 1 = se puede guardar una pieza
+  TET_GHOST: 1,              // 1 = sombra de dónde caerá la pieza
+  TET_GESTURES: 1,           // 1 = tocar gira, deslizar mueve
+  TET_REVIVES: 1,            // revivir con anuncio por partida
+};
+
+// Modo desarrollador OCULTO: toca 7 veces seguidas el logo del menú principal
+// para mostrar/ocultar el panel ⚙. En la versión final pon ALLOWED: false y desaparece.
+const DEV = { ALLOWED: true, TAPS: 10, WINDOW_MS: 3000 }; // acceso secreto: 10 toques en la versión del pie
+
+// Metadatos del panel: una línea nueva = slider nuevo. g = título de grupo.
+const TUNABLES = [
+  {g:'Juego', k:'GRID_SIZE', label:'Tamaño de grilla (por defecto 9×9) ↻', min:5, max:10, step:1, restart:true},
+  {k:'PIECES_PER_TURN', label:'Piezas por turno ↻', min:1, max:4, step:1, restart:true},
+  {k:'SMART_PIECES', label:'Piezas inteligentes 100% (0/1)', min:0, max:1, step:1},
+  {k:'DRAG_OFFSET_CELLS', label:'Elevación al arrastrar', min:0, max:4, step:0.5},
+  {k:'TRAY_SCALE', label:'Tamaño piezas en bandeja', min:0.3, max:0.9, step:0.05},
+  {k:'CLEAR_ANIM_MS', label:'Animación limpieza (ms)', min:0, max:1000, step:50},
+  {g:'Efectos visuales', k:'PARTICLES', label:'Partículas (x)', min:0, max:3, step:0.25},
+  {k:'SHAKE_PX', label:'Temblor de pantalla (px)', min:0, max:14, step:1},
+  {k:'CLEAR_STAGGER_MS', label:'Onda de limpieza (ms)', min:0, max:60, step:2},
+  {k:'SHOW_PRAISE', label:'Textos de elogio (0/1)', min:0, max:1, step:1},
+  {k:'COMBO_GLOW', label:'Resplandor de racha (0/1)', min:0, max:1, step:1},
+  {k:'AMBIENT_FX', label:'Burbujas de fondo (0/1)', min:0, max:1, step:1},
+  {k:'PERFECT_BONUS', label:'Bonus tablero limpio', min:0, max:200, step:10},
+  {k:'FIRE', label:'Fuego en racha (0/1)', min:0, max:1, step:1},
+  {k:'FIRE_AMOUNT', label:'Cantidad de fuego (x)', min:0.25, max:2, step:0.25},
+  {g:'Puntos', k:'POINTS_PER_CELL', label:'Puntos por celda', min:0, max:5, step:1},
+  {k:'POINTS_PER_LINE', label:'Puntos por línea', min:0, max:50, step:5},
+  {k:'MULTILINE_BONUS', label:'Bonus multi-línea', min:0, max:2, step:0.1},
+  {k:'COMBO_STEP', label:'Paso de combo', min:0, max:1, step:0.05},
+  {k:'COMBO_MAX', label:'Combo máximo (x)', min:1, max:6, step:0.5},
+  {g:'Dificultad', k:'LEVEL_EVERY_POINTS', label:'Puntos por nivel', min:50, max:500, step:25},
+  {k:'MAX_LEVEL', label:'Nivel máximo', min:3, max:20, step:1},
+  {k:'DIFF_BIAS', label:'Sesgo a piezas grandes', min:0, max:0.3, step:0.01},
+  {k:'SMART_UNTIL_LEVEL', label:'Ayuda hasta el nivel', min:0, max:20, step:1},
+  {k:'SMART_SOLVABLE', label:'Tandas jugables (0/1)', min:0, max:1, step:1},
+  {k:'HELP_CHANCE', label:'Prob. pieza que ayuda', min:0, max:1, step:0.05},
+  {k:'HELP_FULL_BOOST', label:'Ayuda extra si hay poco espacio', min:0, max:1, step:0.05},
+  {k:'RELIEF_BIAS', label:'Alivio: piezas pequeñas', min:0, max:3, step:0.1},
+  {g:'Sonido', k:'MUSIC_VOL', label:'Volumen música', min:0, max:1, step:0.05},
+  {k:'SFX_VOL', label:'Volumen efectos', min:0, max:1, step:0.05},
+  {k:'MUSIC_BPM', label:'BPM base', min:50, max:110, step:2},
+  {k:'MUSIC_BPM_PER_LEVEL', label:'BPM extra por nivel', min:0, max:4, step:0.5},
+  {k:'MUSIC_REVERB', label:'Reverb / ambiente', min:0, max:1, step:0.05},
+  {g:'Anuncios, revivir y skins', k:'SHOW_BANNER', label:'Mostrar banner (0/1)', min:0, max:1, step:1},
+  {k:'BANNER_HEIGHT', label:'Alto banner (px)', min:30, max:120, step:2},
+  {k:'INTERSTITIAL_EVERY', label:'Intersticial cada N partidas', min:0, max:10, step:1},
+  {k:'INTERSTITIAL_SECONDS', label:'Segundos intersticial', min:0, max:10, step:1},
+  {k:'REWARDED_SECONDS', label:'Segundos anuncio recompensa', min:0, max:10, step:1},
+  {k:'REVIVES_PER_GAME', label:'Revivir por partida', min:0, max:3, step:1},
+  {k:'REVIVE_ROWS', label:'Filas limpiadas al revivir', min:1, max:4, step:1},
+  {k:'UNLOCK_ALL', label:'Desbloquear tienda (0/1)', min:0, max:1, step:1},
+  {g:'Tienda y monedas', k:'COIN_X', label:'Multiplicador de monedas', min:0, max:3, step:0.25},
+  {k:'COIN_RATE', label:'Puntos por moneda (partida)', min:20, max:300, step:10},
+  {k:'COIN_CAP', label:'Máx. monedas por partida', min:0, max:100, step:5},
+  {k:'COIN_AD', label:'Monedas por anuncio', min:0, max:100, step:5},
+  {k:'COIN_AD_PER_DAY', label:'Anuncios de monedas por día', min:0, max:10, step:1},
+  {g:'Modo niveles', k:'LEVEL_COUNT', label:'Cantidad de niveles', min:10, max:100, step:5},
+  {k:'LEVEL_TARGET_X', label:'Dificultad de metas (x)', min:0.5, max:2, step:0.1},
+  {k:'LEVEL_MOVES_X', label:'Jugadas permitidas (x)', min:0.5, max:2, step:0.1},
+  {k:'LEVEL_MAX_FILL', label:'Bloques iniciales máx.', min:0, max:30, step:1},
+  {k:'REVIVE_MOVES', label:'Jugadas extra por anuncio', min:1, max:10, step:1},
+  {k:'LEVELS_OPEN', label:'Abrir todos los niveles (0/1)', min:0, max:1, step:1},
+  {g:'Herramientas y reloj', k:'TOOL_UNDO', label:'Deshacer iniciales', min:0, max:5, step:1},
+  {k:'TOOL_SHUFFLE', label:'Barajar iniciales', min:0, max:5, step:1},
+  {k:'TOOL_BOMB', label:'Bombas iniciales', min:0, max:5, step:1},
+  {k:'TOOL_ROTATE', label:'Girar iniciales', min:0, max:5, step:1},
+  {k:'TOOL_MAX', label:'Máximo por herramienta', min:1, max:9, step:1},
+  {k:'BOMB_RADIUS', label:'Radio de la bomba', min:1, max:3, step:1},
+  {k:'LINE_TIME_S', label:'Segundos por línea', min:15, max:120, step:5},
+  {k:'TIME_DECAY', label:'Segundos menos por nivel', min:0, max:6, step:1},
+  {k:'TIME_MIN', label:'Segundos mínimos', min:10, max:60, step:5},
+  {g:'Modo clásico', k:'TET_START_LEVEL', label:'Nivel inicial', min:1, max:15, step:1},
+  {k:'TET_LINES_PER_LEVEL', label:'Líneas por nivel', min:3, max:20, step:1},
+  {k:'TET_SPEED_X', label:'Velocidad de caída (x)', min:0.5, max:2.5, step:0.1},
+  {k:'TET_SOFT_X', label:'Velocidad al mantener ▼ (x)', min:4, max:40, step:1},
+  {k:'TET_LOCK_MS', label:'Tiempo para deslizar (ms)', min:100, max:1200, step:50},
+  {k:'TET_CLEAR_MS', label:'Animación de líneas (ms)', min:100, max:700, step:20},
+  {k:'TET_NEXT', label:'Piezas siguientes', min:1, max:5, step:1},
+  {k:'TET_HOLD', label:'Guardar pieza (0/1)', min:0, max:1, step:1},
+  {k:'TET_GHOST', label:'Sombra de caída (0/1)', min:0, max:1, step:1},
+  {k:'TET_GESTURES', label:'Gestos en el tablero (0/1)', min:0, max:1, step:1},
+  {k:'TET_REVIVES', label:'Revivir por partida', min:0, max:3, step:1},
+];
+
+/* =====================================================================
+   2. SKINS  ·  paleta (8 colores) + estilo de dibujo + récord que la abre
+   ===================================================================== */
+const SKINS = [   // Los índices existentes se conservan para respetar compras y partidas guardadas.
+  {name:'Caramelo',  price:0,   style:'gloss', r:0.2,
+   pal:['#ff6b6b','#ffa94d','#ffd43b','#4cd68a','#38c4d9','#6c8cff','#b07cff','#f783ac'], note:'Laca brillante y biseles suaves'},
+  {name:'Neón',      price:250, style:'neon',  r:0.2, motion:'neon', premium:true,
+   pal:['#ff3d81','#ff9f1c','#f4e04d','#2bff88','#00e5ff','#4d7cff','#b44dff','#ff6bd6'], note:'Tubos luminosos con barrido de energía'},
+  {name:'Píxel',     price:300, style:'pixel', r:0,
+   pal:['#e63946','#f4a261','#e9c46a','#2a9d8f','#48cae4','#3a86ff','#8338ec','#ff70a6'], note:'Bloques retro con sombreado por píxel'},
+  {name:'Hielo',     price:350, style:'ice',   r:0.23,
+   pal:['#6ec6ff','#5eead4','#a78bfa','#ff8fb1','#ffe066','#3dd6d0','#7aa2ff','#ff9de2'], note:'Hielo translúcido, cortes y grietas'},
+  {name:'Madera',    price:400, style:'wood',  r:0.14,
+   pal:['#bd864f','#ad7542','#c9955d','#a87543','#98663b','#d0a16a','#a36f40','#c08c54'], note:'Madera tallada con vetas y nudos'},
+  {name:'Gominola',  price:450, style:'jelly', r:0.3, motion:'jelly', premium:true,
+   pal:['#ff5c7a','#ff9a3c','#ffd23c','#46d37f','#35c6ff','#7a7bff','#c26bff','#ff7cc8'], note:'Gel translúcido con brillo húmedo'},
+  {name:'Cristal solar', price:350, style:'prism', r:0.24, motion:'prism', premium:true,
+   pal:['#f04d72','#f3a53d','#c2f1ff','#39cc94','#477ef3','#ad77f5','#ffcf68','#72e4df'], note:'Cristal facetado con reflejos prismáticos'},
+  {name:'Atardecer', price:500, style:'magma', r:0.18, motion:'embers', premium:true,
+   pal:['#ff6f61','#ff9e57','#ffc857','#e85d75','#b5446e','#ff8c42','#9d4edd','#f78fb3'], note:'Roca volcánica con fisuras incandescentes'},
+  {name:'Aurora',    price:550, style:'aurora', r:0.2, motion:'aurora', premium:true,
+   pal:['#65fbd2','#3cc9d8','#68a7ff','#a58bff','#f6a6ff','#8ee3b5','#59d9ff','#c4b5fd'], note:'Bandas boreales que se desplazan'},
+  {name:'Prisma',    price:600, style:'prism', r:0.24, motion:'prism', premium:true,
+   pal:['#ff669d','#ffad66','#ffdf70','#7ce8b5','#71dcff','#8f9bff','#d39aff','#ff8ad8'], note:'Espectro iridiscente animado'},
+  {name:'Esmeralda', price:550, style:'emerald', r:0.22,
+   pal:['#087f5b','#12b886','#38d9a9','#94d82d','#69db7c','#20c997','#63e6be','#a9e34b'], note:'Cortes profundos de piedra preciosa'},
+  {name:'Galaxia',   price:650, style:'galaxy', r:0.2, motion:'stars', premium:true,
+   pal:['#ff4dca','#ff8a3d','#f9f871','#00f5d4','#00bbf9','#7b61ff','#c77dff','#ff5d8f'], note:'Nebulosas y estrellas centelleantes'},
+  {name:'Piedra lunar', price:600, style:'stone', r:0.16,
+   pal:['#b8c0ff','#d7e3fc','#9bf6ff','#caffbf','#fdffb6','#ffc6ff','#a0c4ff','#e2eafc'], note:'Mineral mate con vetas y pequeñas inclusiones'},
+  {name:'Acero titanio', price:700, style:'metal', r:0.12, motion:'metal', premium:true,
+   pal:['#8798ad','#aebbc9','#73869a','#c5d1dd','#617486','#91a2b5','#d2dce6','#526577'], note:'Metal cepillado, biseles y remaches'},
+  {name:'Obsidiana', price:750, style:'obsidian', r:0.15, motion:'obsidian', premium:true,
+   pal:['#8a72ff','#4f83ff','#cf65ef','#49d8d2','#fd6aa5','#8c9dff','#bd76ff','#5b72b8'], note:'Vidrio volcánico oscuro con luz violeta móvil'},
+  {name:'Brillo 3D', price:0, style:'kit-glossy', assetSet:'blockPuzzleKit', r:0.14,
+    pal:['#ff6b6b','#ffa94d','#ffd43b','#4cd68a','#38c4d9','#6c8cff','#b07cff','#f783ac'], note:'Bloques brillantes con relieve del paquete gratuito'},
+];
+
+/* =====================================================================
+   3. PIEZAS  ·  formas dibujadas con texto ('#' = celda)
+   ===================================================================== */
+const SHAPES = [
+  ['#'], ['##'], ['#','#'], ['###'], ['#','#','#'],
+  ['####'], ['#','#','#','#'], ['#####'], ['#','#','#','#','#'],
+  ['##','##'], ['###','###','###'], ['###','###'], ['##','##','##'],
+  ['#.','##'], ['.#','##'], ['##','#.'], ['##','.#'],
+  ['#..','#..','###'], ['..#','..#','###'], ['###','#..','#..'], ['###','..#','..#'],
+  ['#.','#.','##'], ['.#','.#','##'], ['##','#.','#.'], ['##','.#','.#'],
+  ['###','.#.'], ['.#.','###'], ['#.','##','#.'], ['.#','##','.#'],
+  ['.##','##.'], ['##.','.##'], ['#.','##','.#'], ['.#','##','#.'],
+].map(rows => {
+  const cells = [];
+  rows.forEach((r, y) => [...r].forEach((ch, x) => ch === '#' && cells.push([y, x])));
+  return { cells, h: rows.length, w: rows[0].length };
+});
+
+// RNG de piezas: el reto diario usa una semilla fija por fecha; los efectos siguen siendo aleatorios.
+let gameplayRng = null;
+const gameplayRandom = () => gameplayRng ? gameplayRng() : Math.random();
+
+// Elección ponderada: más nivel = más piezas grandes; con el tablero lleno = más piezas pequeñas (alivio)
+const pickShape = () => {
+  const bias = S.dailyChallenge ? 0 : CONFIG.DIFF_BIAS * (S.level - 1) - CONFIG.RELIEF_BIAS * Math.max(0, fullness() - 0.3);
+  const w = SHAPES.map(s => Math.exp(bias * Math.max(-3, Math.min(2, s.cells.length - 4))));
+  let r = gameplayRandom() * w.reduce((a, b) => a + b, 0);
+  for (let i = 0; i < w.length; i++) if ((r -= w[i]) <= 0) return SHAPES[i];
+  return SHAPES[0];
+};
+const randPiece = () => ({ ...pickShape(), color: 1 + Math.floor(gameplayRandom() * 8) });
+
+/* =====================================================================
+   4. PREFERENCIAS + ESTADO + LÓGICA DE GRILLA
+   ===================================================================== */
+const PKEY = 'blockpuzzle.v2';
+const P = { best: 0, skin: 0, musicTrack: 'calma', music: true, sfx: true, vibe: true, dev: false, lv: 1, stars: {}, timer: true, tut: false, tbest: 0, ttut: false, coins: 50, owned: { skins: [0], themes: ['night', 'auto'] }, theme: 'night', mis: null, ads: null, lang: 'es' };
+let STORED_PREFS = {};
+try { STORED_PREFS = JSON.parse(localStorage.getItem(PKEY) || '{}'); Object.assign(P, STORED_PREFS); } catch (e) { STORED_PREFS = {}; }
+// Migration only once: prior versions used the light palette as the default ('auto').
+if (!STORED_PREFS.themeDefaultV18) {
+  if (P.theme === 'auto') P.theme = 'night';
+  P.themeDefaultV18 = true;
+}
+P.dev = P.dev === true; // evita que valores guardados ajenos activen el modo por truthiness
+P.lang = ['es','en','it','fr'].includes(P.lang) ? P.lang : 'es';
+P.musicTrack = ['calma','aventura','synthwave','piano','lofi','cristal'].includes(P.musicTrack) ? P.musicTrack : 'calma';
+const save = () => { try { localStorage.setItem(PKEY, JSON.stringify(P)); } catch (e) {} };
+
+const S = { n: 8, grid: [], tray: [], score: 0, streak: 0, comboMisses: 0, moves: 0, level: 1, games: 0, revives: 0,
+            over: false, drag: null, fx: [], popups: [], parts: [], placed: [], rings: [], beams: [], zoom: null, sweep: null, edge: null, shake: null, flash: null,
+            mode: 'inf', lv: 1, def: null, movesLeft: 0, linesTotal: 0, maxStreak: 0, failWhy: '',
+            dailyChallenge: false, dailyChallengeDate: '', dailyChallengeWon: false,
+            flames: [], fireAcc: 0, last: 0, timer: 0, result: null };
+const SK = () => SKINS[P.skin] || SKINS[0];
+// Tienda: valores por defecto y compatibilidad con partidas ya guardadas
+if (!P.owned || !Array.isArray(P.owned.skins)) P.owned = { skins: [0], themes: ['night', 'auto'] };
+if (!Array.isArray(P.owned.themes)) P.owned.themes = ['night', 'auto'];
+// Medianoche is now the free default; Limpio remains available as the light alternative.
+if (!P.owned.themes.includes('night')) P.owned.themes.push('night');
+if (!P.owned.themes.includes('auto')) P.owned.themes.push('auto');
+if (!P.owned.skins.includes(0)) P.owned.skins.push(0);
+if (!P.owned.skins.includes(15)) P.owned.skins.push(15); // Brillo 3D gratuito durante pruebas
+if (P.skin > 0 && !P.owned.skins.includes(P.skin)) P.owned.skins.push(P.skin);      // conserva la skin que ya usabas
+P.coins = Math.max(0, +P.coins || 0);
+// Perfil, estadísticas, logros y regalo diario (con valores por defecto para partidas ya guardadas)
+if (!P.st || typeof P.st !== 'object') P.st = {};
+['games', 'lines', 'perfect', 'pieces', 'buys', 'tet4', 'earned', 'streak', 'score', 'time', 'cycles'].forEach(k => { P.st[k] = +P.st[k] || 0; });
+P.xp = +P.xp || 0; P.name = typeof P.name === 'string' && P.name ? P.name : 'Jugador';
+if (!P.ach || typeof P.ach !== 'object') P.ach = {};
+if (!P.dr || typeof P.dr !== 'object') P.dr = { last: '', n: 0 };
+if (!P.ch || typeof P.ch !== 'object') P.ch = {};
+P.mv = typeof P.mv === 'number' ? P.mv : 1; P.sv = typeof P.sv === 'number' ? P.sv : 1;
+const unlocked = i => owns('skins', i);
+
+/* =====================================================================
+   TIENDA · MONEDAS · MISIONES · TEMAS
+   ===================================================================== */
+/* ---------- Temas del juego: paletas distintivas con interfaz oscura permanente ---------- */
+const THEMES = [
+  { id: 'night', name: 'Medianoche', price: 0, note: 'Azul profundo, oscuro y envolvente', vars: {
+    '--bg': '#10142b', '--text': '#eef0ff', '--muted': '#8a92c4', '--board': '#1d2347', '--cell': '#262d58', '--card': '#192040',
+    '--accent': '#7d8bff', '--ad-bg': '#161b38', '--ad-line': '#454d86', '--b1': '#4b2a8a', '--b2': '#1f3a8a', '--b3': '#3a2a6a', '--b4': '#1d5f6f',
+    '--ba': '.5', '--ha': '#3b2a86', '--hb': '#1b1650', '--hc': '#0b0a24' } },
+  { id: 'auto', name: 'Limpio', price: 0, note: 'Paleta clara, limpia y luminosa', vars: {
+    '--bg': '#f2f5fb', '--text': '#192641', '--muted': '#66758e', '--board': '#cfd9e9', '--cell': '#e7edf7', '--card': '#ffffff',
+    '--accent': '#4368e8', '--ad-bg': '#e7edf6', '--ad-line': '#aebbd0', '--b1': '#b6c6ff', '--b2': '#a8d7f5', '--b3': '#f6d4a3', '--b4': '#bdebd9',
+    '--ba': '.62', '--ha': '#3859b7', '--hb': '#233777', '--hc': '#101932' } },
+  { id: 'forest', name: 'Bosque', price: 300, note: 'Verdes suaves y relajantes', vars: {
+    '--bg': '#e9f3ea', '--text': '#1c3326', '--muted': '#6a8a76', '--board': '#cfe3d3', '--cell': '#dcebdf', '--card': '#ffffff',
+    '--accent': '#2f9e63', '--ad-bg': '#dbeadc', '--ad-line': '#8fb59a', '--b1': '#b7e4c0', '--b2': '#cfe9a8', '--b3': '#a8e0d2', '--b4': '#e6f2b0',
+    '--ba': '.7', '--ha': '#1f6b4a', '--hb': '#0f3d2e', '--hc': '#06201a' } },
+  { id: 'sunset', name: 'Atardecer', price: 350, note: 'Cálido, con tonos naranja y granate', vars: {
+    '--bg': '#2a1722', '--text': '#fff0e8', '--muted': '#c99a9a', '--board': '#43232e', '--cell': '#552d39', '--card': '#3a1d28',
+    '--accent': '#ff8a5c', '--ad-bg': '#321a24', '--ad-line': '#7a4a58', '--b1': '#8a2f4a', '--b2': '#b5532f', '--b3': '#6a2a5a', '--b4': '#a0402a',
+    '--ba': '.5', '--ha': '#9a3a4a', '--hb': '#5a1f3a', '--hc': '#20101c' } },
+  { id: 'quartz', name: 'Cuarzo solar', price: 350, note: 'Cristales cálidos con reflejos minerales', vars: {
+    '--bg': '#f2e9dc', '--text': '#392b3d', '--muted': '#938078', '--board': '#ded0c3', '--cell': '#eee2d7', '--card': '#fffaf5',
+    '--accent': '#c37b55', '--ad-bg': '#eee0d4', '--ad-line': '#c6a28d', '--b1': '#f1c9a9', '--b2': '#d4c1f0', '--b3': '#f3d6bf', '--b4': '#c5e4de',
+    '--ba': '.72', '--ha': '#9b5a4b', '--hb': '#5c3753', '--hc': '#291827' } },
+  { id: 'lavender', name: 'Lavanda', price: 300, note: 'Morados claros y delicados', vars: {
+    '--bg': '#f1ecf8', '--text': '#2d2347', '--muted': '#8c80ad', '--board': '#ddd2ee', '--cell': '#e8dff4', '--card': '#ffffff',
+    '--accent': '#8a5bd6', '--ad-bg': '#e4daf1', '--ad-line': '#ac9ccb', '--b1': '#e0c8f5', '--b2': '#c8c8f8', '--b3': '#f5c8e4', '--b4': '#d6e0f8',
+    '--ba': '.75', '--ha': '#5a3a9a', '--hb': '#33206a', '--hc': '#150d33' } },
+  { id: 'cocoa', name: 'Chocolate', price: 400, note: 'Marrones cálidos, muy acogedor', vars: {
+    '--bg': '#241a14', '--text': '#f6ebdf', '--muted': '#b79c85', '--board': '#3a2a20', '--cell': '#483429', '--card': '#2f221a',
+    '--accent': '#e0a15a', '--ad-bg': '#2a1e17', '--ad-line': '#6e5240', '--b1': '#6a4328', '--b2': '#7a5a2a', '--b3': '#5a3a2a', '--b4': '#8a5a3a',
+    '--ba': '.45', '--ha': '#6a4a30', '--hb': '#3a281c', '--hc': '#170f0a' } },
+  { id: 'ivory', name: 'Marfil', price: 250, note: 'Máxima claridad, cálido y limpio', vars: {
+    '--bg': '#f7f4ec', '--text': '#2e3035', '--muted': '#77766f', '--board': '#dedbd0', '--cell': '#eeece4', '--card': '#fffefa',
+    '--accent': '#55766c', '--ad-bg': '#eae7dc', '--ad-line': '#b8b5a9', '--b1': '#ead8bd', '--b2': '#cddfd7', '--b3': '#f0d5cf', '--b4': '#d5dced',
+    '--ba': '.7', '--ha': '#55766c', '--hb': '#324e47', '--hc': '#1d302b' } },
+  { id: 'mint', name: 'Menta', price: 400, note: 'Verde agua fresco y sereno', vars: {
+    '--bg': '#eaf7f3', '--text': '#153b38', '--muted': '#668b85', '--board': '#c6e5dc', '--cell': '#dff1eb', '--card': '#fbfffd',
+    '--accent': '#138a78', '--ad-bg': '#d4ebe3', '--ad-line': '#87b8ab', '--b1': '#a9e2d2', '--b2': '#b9d9f2', '--b3': '#f2dfb0', '--b4': '#c2ead0',
+    '--ba': '.7', '--ha': '#176e62', '--hb': '#10473f', '--hc': '#072b29' } },
+  { id: 'slate', name: 'Pizarra', price: 450, note: 'Grafito elegante con acento turquesa', vars: {
+    '--bg': '#202a35', '--text': '#f2f6f8', '--muted': '#a7b5c2', '--board': '#344553', '--cell': '#405362', '--card': '#293744',
+    '--accent': '#48c9b0', '--ad-bg': '#25333e', '--ad-line': '#536a79', '--b1': '#285d68', '--b2': '#325b91', '--b3': '#7d5868', '--b4': '#366a58',
+    '--ba': '.5', '--ha': '#247a7f', '--hb': '#163e54', '--hc': '#101a28' } },
+  { id: 'aurora', name: 'Aurora boreal', price: 550, note: 'Noche azul con destellos verdes', vars: {
+    '--bg': '#101d2b', '--text': '#e9fff8', '--muted': '#91b8b5', '--board': '#203746', '--cell': '#2b4855', '--card': '#182c3a',
+    '--accent': '#5eead4', '--ad-bg': '#162b36', '--ad-line': '#416574', '--b1': '#166b66', '--b2': '#234d87', '--b3': '#603d79', '--b4': '#24765b',
+    '--ba': '.6', '--ha': '#155b61', '--hb': '#102d52', '--hc': '#07131f' } },
+  { id: 'rose', name: 'Rosa antiguo', price: 400, note: 'Malva suave y elegancia cálida', vars: {
+    '--bg': '#f6edf1', '--text': '#432c3c', '--muted': '#987a8c', '--board': '#e4cfda', '--cell': '#f0e1e8', '--card': '#fff9fc',
+    '--accent': '#b34e7b', '--ad-bg': '#eadbe3', '--ad-line': '#c5a2b4', '--b1': '#f0c2d6', '--b2': '#d6c9f1', '--b3': '#f6d7b4', '--b4': '#c8e6df',
+    '--ba': '.7', '--ha': '#873e65', '--hb': '#572d50', '--hc': '#251728' } },
+  { id: 'sand', name: 'Duna', price: 350, note: 'Arena clara con acentos terracota', vars: {
+    '--bg': '#f5eee2', '--text': '#3e3026', '--muted': '#8c7866', '--board': '#dfcfba', '--cell': '#ede1d0', '--card': '#fffaf2',
+    '--accent': '#bd6845', '--ad-bg': '#ece0d0', '--ad-line': '#c5a78d', '--b1': '#eac7a4', '--b2': '#d3d9b2', '--b3': '#f1cfbe', '--b4': '#c8dce0',
+    '--ba': '.65', '--ha': '#9f573d', '--hb': '#70432f', '--hc': '#30231d' } },
+  { id: 'galaxy3d', name: 'Galaxia 3D', price: 650, note: 'Nebulosas violetas y estrellas Kenney', vars: {
+    '--bg':'#100e2b','--text':'#f5f0ff','--muted':'#aaa5e4','--board':'#211b4b','--cell':'#30265f','--card':'#191438',
+    '--accent':'#aa8bff','--ad-bg':'#18123a','--ad-line':'#51417f','--b1':'#633cb5','--b2':'#252c8c','--b3':'#7b2cbf','--b4':'#126c91',
+    '--ba':'.46','--ha':'#512a92','--hb':'#241451','--hc':'#09091e' } },
+  { id: 'crystal', name: 'Cristal Prisma', price: 550, note: 'Brillos azules y destellos de cristal', vars: {
+    '--bg':'#0b1b32','--text':'#eaf8ff','--muted':'#90b9dc','--board':'#14334d','--cell':'#1d4764','--card':'#10283f',
+    '--accent':'#59d9ff','--ad-bg':'#10253b','--ad-line':'#2b6480','--b1':'#126c9b','--b2':'#2947a5','--b3':'#5b3aa5','--b4':'#1f867b',
+    '--ba':'.42','--ha':'#145e8a','--hb':'#102e59','--hc':'#061526' } },
+  { id: 'ember', name: 'Chispas Ámbar', price: 450, note: 'Chispas cálidas sobre azul nocturno', vars: {
+    '--bg':'#1c1428','--text':'#fff4e6','--muted':'#c9a6a0','--board':'#38213a','--cell':'#4b2d45','--card':'#291b32',
+    '--accent':'#ffc15a','--ad-bg':'#2c1c2c','--ad-line':'#7b4a48','--b1':'#a34d38','--b2':'#6e317c','--b3':'#a45c2d','--b4':'#3c586c',
+    '--ba':'.4','--ha':'#9a4930','--hb':'#4b2342','--hc':'#120c20' } },
+];
+/* Even the optional color palettes retain the permanent-dark surfaces. Their accents remain unique. */
+const DARK_PALETTE_SURFACES = {
+  forest:  {'--bg':'#0b1b12','--text':'#eaffef','--muted':'#8db79a','--board':'#173724','--cell':'#214b31','--card':'#10271a','--ad-bg':'#132b1c','--ad-line':'#306546','--accent':'#45dc85','--b1':'#287c4d','--b2':'#79b947','--b3':'#238d80','--b4':'#b2c949','--ba':'.46','--ha':'#276847','--hb':'#123a25','--hc':'#061a10'},
+  quartz:  {'--bg':'#1a1219','--text':'#fff0e4','--muted':'#c4a28b','--board':'#34242b','--cell':'#453037','--card':'#281b21','--ad-bg':'#2c1d22','--ad-line':'#83583c','--accent':'#ffad70','--b1':'#a95338','--b2':'#a38acb','--b3':'#c87b4b','--b4':'#549f94','--ba':'.46','--ha':'#9a5a4b','--hb':'#4c283c','--hc':'#1a1018'},
+  lavender:{'--bg':'#171025','--text':'#f4eeff','--muted':'#b5a4d9','--board':'#30234b','--cell':'#3e2f60','--card':'#241a3b','--ad-bg':'#211833','--ad-line':'#5a477d','--accent':'#b48aff','--b1':'#9464d6','--b2':'#7778db','--b3':'#c16eac','--b4':'#7c98df','--ba':'.48','--ha':'#5a3a9a','--hb':'#33206a','--hc':'#150d33'},
+  ivory:   {'--bg':'#1a1714','--text':'#fff4e6','--muted':'#c2ad91','--board':'#342c24','--cell':'#453a30','--card':'#29211b','--ad-bg':'#2b231c','--ad-line':'#796046','--accent':'#edaa68','--b1':'#b36e3d','--b2':'#8e9b65','--b3':'#ca866a','--b4':'#669ba0','--ba':'.45','--ha':'#9f573d','--hb':'#4e3024','--hc':'#1c120d'},
+  mint:    {'--bg':'#0d1f1d','--text':'#e9fffb','--muted':'#87b9b0','--board':'#193b37','--cell':'#245047','--card':'#112c29','--ad-bg':'#14332f','--ad-line':'#397269','--accent':'#49dfc0','--b1':'#287e73','--b2':'#369c85','--b3':'#6a9c63','--b4':'#9bcf9b','--ba':'.46','--ha':'#236b62','--hb':'#12413d','--hc':'#071d1b'},
+  rose:    {'--bg':'#21131d','--text':'#fff0f5','--muted':'#c69caf','--board':'#412433','--cell':'#533044','--card':'#301c29','--ad-bg':'#351f2b','--ad-line':'#805064','--accent':'#ff83b0','--b1':'#ae456f','--b2':'#b36cab','--b3':'#ce718b','--b4':'#6d96b8','--ba':'.46','--ha':'#873b5b','--hb':'#4f233f','--hc':'#1e101b'},
+  sand:    {'--bg':'#211710','--text':'#fff0dd','--muted':'#c8a98a','--board':'#3d2a20','--cell':'#4e3628','--card':'#2b1e17','--ad-bg':'#302118','--ad-line':'#78533b','--accent':'#e7a261','--b1':'#aa6238','--b2':'#bb8e47','--b3':'#a54d37','--b4':'#6b9180','--ba':'.44','--ha':'#9c5c39','--hb':'#563322','--hc':'#1e120c'},
+  galaxy3d:{'--bg':'#100b24','--text':'#f5f0ff','--muted':'#aea1e3','--board':'#211a42','--cell':'#302355','--card':'#191331','--ad-bg':'#17102e','--ad-line':'#504078','--accent':'#b59bff','--b1':'#633cb5','--b2':'#292e86','--b3':'#6c299c','--b4':'#126c91','--ba':'.36','--ha':'#512a92','--hb':'#241451','--hc':'#09091e'},
+  crystal: {'--bg':'#091725','--text':'#eaf8ff','--muted':'#91bad5','--board':'#123044','--cell':'#1a4056','--card':'#0f2435','--ad-bg':'#102536','--ad-line':'#2b647f','--accent':'#5ddcff','--b1':'#126c9b','--b2':'#2947a5','--b3':'#5b3aa5','--b4':'#1f867b','--ba':'.34','--ha':'#145e8a','--hb':'#102e59','--hc':'#061526'},
+  ember:   {'--bg':'#180f1c','--text':'#fff4e6','--muted':'#d0aaa0','--board':'#33202b','--cell':'#482936','--card':'#251722','--ad-bg':'#2c1b24','--ad-line':'#7b4a48','--accent':'#ffc15a','--b1':'#a34d38','--b2':'#6e317c','--b3':'#a45c2d','--b4':'#3c586c','--ba':'.3','--ha':'#9a4930','--hb':'#4b2342','--hc':'#120c20'}
+
+};
+for (const theme of THEMES) {
+  if (DARK_PALETTE_SURFACES[theme.id] && theme.vars) Object.assign(theme.vars, DARK_PALETTE_SURFACES[theme.id]);
+}
+const THEME_KEYS = ['--bg', '--text', '--muted', '--board', '--cell', '--card', '--accent', '--ad-bg', '--ad-line',
+                    '--b1', '--b2', '--b3', '--b4', '--ba', '--ha', '--hb', '--hc'];
+function applyTheme(id) {                              // aplica el tema al instante (variables CSS del documento)
+  const th = THEMES.find(t => t.id === id) || THEMES[0], root = document.documentElement;
+  THEME_KEYS.forEach(k => root.style.removeProperty(k));
+  if (th.vars) Object.entries(th.vars).forEach(([k, v]) => root.style.setProperty(k, v));
+  root.dataset.gtheme = th.id;
+  readTheme(); redraw();
+}
+const owns = (kind, id) => !!(CONFIG.UNLOCK_ALL || P.owned[kind].includes(id));
+
+/* ---------- Misiones diarias y semanales ----------
+   m: 'sum' acumula · 'max' guarda el mejor valor.  t: objetivo · r: monedas de recompensa */
+const DAILY = [
+  { k: 'lines',      m: 'sum', t: 15,   r: 20, text: 'Limpia 15 líneas' },
+  { k: 'score_game', m: 'max', t: 400,  r: 25, text: 'Consigue 400 puntos en una partida' },
+  { k: 'streak',     m: 'max', t: 3,    r: 25, text: 'Haz una racha de 3 limpiezas seguidas' },
+  { k: 'games',      m: 'sum', t: 3,    r: 15, text: 'Termina 3 partidas' },
+  { k: 'levels',     m: 'sum', t: 2,    r: 30, text: 'Supera 2 niveles' },
+  { k: 'pieces',     m: 'sum', t: 40,   r: 15, text: 'Coloca 40 piezas' },
+  { k: 'tools',      m: 'sum', t: 2,    r: 15, text: 'Usa 2 herramientas' },
+  { k: 'multi',      m: 'sum', t: 2,    r: 25, text: 'Limpia 3 líneas a la vez, 2 veces' },
+  { k: 'tet_lines',  m: 'sum', t: 8,    r: 20, text: 'Limpia 8 líneas en el modo clásico' },
+  { k: 'perfect',    m: 'sum', t: 1,    r: 35, text: 'Deja el tablero vacío una vez' },
+];
+const WEEKLY = [
+  { k: 'lines',       m: 'sum', t: 120,  r: 110, text: 'Limpia 120 líneas' },
+  { k: 'levels',      m: 'sum', t: 8,    r: 140, text: 'Supera 8 niveles' },
+  { k: 'score_total', m: 'sum', t: 3000, r: 100, text: 'Suma 3000 puntos en total' },
+  { k: 'games',       m: 'sum', t: 15,   r: 90,  text: 'Termina 15 partidas' },
+  { k: 'streak',      m: 'max', t: 5,    r: 120, text: 'Haz una racha de 5 limpiezas seguidas' },
+  { k: 'tet_lines',   m: 'sum', t: 50,   r: 120, text: 'Limpia 50 líneas en el modo clásico' },
+  { k: 'perfect',     m: 'sum', t: 3,    r: 130, text: 'Deja el tablero vacío 3 veces' },
+  { k: 'pieces',      m: 'sum', t: 300,  r: 90,  text: 'Coloca 300 piezas' },
+  { k: 'tools',       m: 'sum', t: 8,    r: 80,  text: 'Usa 8 herramientas' },
+];
+const POOL = { d: DAILY, w: WEEKLY };
+const DAILY_BONUS = 25, WEEKLY_BONUS = 120;           // por completar y cobrar las 3 misiones
+
+const pad2 = n => String(n).padStart(2, '0');
+const dayKey = d => `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+const weekStart = d => { const w = new Date(d.getFullYear(), d.getMonth(), d.getDate()); w.setDate(w.getDate() - ((w.getDay() + 6) % 7)); return w; };   // lunes
+const hashStr = s => { let h = 2166136261; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; };
+const rng = seed => () => {                           // mulberry32: mismo resultado para el mismo día
+  seed = (seed + 0x6D2B79F5) | 0; let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+  t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+};
+
+/* ---------- Reto diario Raddykall: offline, reproducible y sin anuncios ---------- */
+function previousDayKey(key) {
+  const parts = String(key).split('-').map(Number);
+  const d = new Date(parts[0], parts[1] - 1, parts[2] - 1);
+  return dayKey(d);
+}
+function dailyChallengeSpec(date = dayKey(new Date())) {
+  const seed = hashStr('RADDYKALL-DAILY-v1|' + date);
+  const kind = ['score', 'lines', 'streak'][seed % 3];
+  const target = kind === 'score'
+    ? [650, 750, 850, 950, 1050][(seed >>> 4) % 5]
+    : kind === 'lines'
+      ? 8 + ((seed >>> 4) % 4)
+      : 3 + ((seed >>> 4) % 2);
+  const reward = 55 + ((seed >>> 9) % 4) * 10;
+  return { date, seed, kind, target, reward };
+}
+function dailyRecord(date = dayKey(new Date())) {
+  if (!P.dailyRecords || typeof P.dailyRecords !== 'object' || Array.isArray(P.dailyRecords)) P.dailyRecords = {};
+  if (!P.dailyRecords[date] || typeof P.dailyRecords[date] !== 'object') {
+    const prev = P.dailyRecords[previousDayKey(date)];
+    P.dailyRecords[date] = { best: 0, completed: false, streak: prev && prev.completed ? (+prev.streak || 0) : 0 };
+    const keys = Object.keys(P.dailyRecords).sort();
+    keys.slice(0, Math.max(0, keys.length - 14)).forEach(k => delete P.dailyRecords[k]);
+    save();
+  }
+  const r = P.dailyRecords[date];
+  r.best = Math.max(0, Number(r.best) || 0); r.completed = !!r.completed; r.streak = Math.max(0, Number(r.streak) || 0);
+  return r;
+}
+function dailyMetric(state, spec) {
+  if (spec.kind === 'lines') return Math.max(0, Number(state.linesTotal) || 0);
+  if (spec.kind === 'streak') return Math.max(0, Number(state.maxStreak) || 0);
+  return Math.max(0, Number(state.score) || 0);
+}
+function dailyObjective(spec) {
+  if (spec.kind === 'lines') return `Limpia ${spec.target} líneas en una partida`;
+  if (spec.kind === 'streak') return `Alcanza una racha ×${spec.target}`;
+  return `Consigue ${spec.target} puntos en una partida`;
+}
+function dailyUnit(spec) { return spec.kind === 'lines' ? 'líneas' : spec.kind === 'streak' ? 'racha' : 'puntos'; }
+function dailyShortName(spec) { return spec.kind === 'lines' ? 'Líneas' : spec.kind === 'streak' ? 'Racha' : 'Puntos'; }
+function updateDailyChallengeProgress() {
+  if (!S.dailyChallenge || S.mode !== 'inf') return;
+  const spec = dailyChallengeSpec(S.dailyChallengeDate || dayKey(new Date()));
+  const rec = dailyRecord(spec.date), value = dailyMetric(S, spec);
+  if (value > rec.best) { rec.best = value; saveSoon(); }
+  if (!rec.completed && value >= spec.target) {
+    const prev = P.dailyRecords[previousDayKey(spec.date)];
+    rec.completed = true;
+    rec.streak = prev && prev.completed ? (+prev.streak || 0) + 1 : 1;
+    S.dailyChallengeWon = true;
+    const reward = coinX(spec.reward);
+    addCoins(reward); addXp(25); save();
+    sfx.achievement(); confetti(32);
+    toast(`¡Puzzle diario completado! +${reward} monedas`);
+    refreshBadges();
+  }
+  updateMChip();
+}
+function dailyChallengeHtml() {
+  const spec = dailyChallengeSpec(), rec = dailyRecord(spec.date);
+  const pct = Math.min(100, Math.round((rec.best / spec.target) * 100));
+  const completed = rec.completed;
+  return `<section class="daily-challenge" aria-label="Puzzle diario">
+    <div class="dc-top"><span class="dc-kicker">PUZZLE DIARIO</span><span class="dc-date">${spec.date}</span></div>
+    <h3>Puzzle diario</h3>
+    <div class="dc-objective"><small>Objetivo de hoy</small><b>${dailyObjective(spec)}</b></div>
+    <div class="dc-progress"><div class="dc-progress-label"><span>Mejor progreso</span><b>${Math.min(rec.best, spec.target)} / ${spec.target} ${dailyUnit(spec)}</b></div><div class="dc-track"><i style="width:${pct}%"></i></div></div>
+    <div class="dc-foot"><span class="dc-reward">${ICON.coin}<b>+${coinX(spec.reward)}</b><small>al completar</small></span><button class="btn mini dc-play" data-a="sh_daily">${completed ? 'Repetir reto' : 'Jugar reto'}</button></div>
+    <p class="dc-note"><span>Mismo sorteo de piezas para todos · Funciona sin conexión</span>${completed ? '<span>Premio cobrado hoy</span>' : ''}${rec.streak ? `<span>Racha: ${rec.streak} días</span>` : ''}</p>
+  </section>`;
+}
+function pick3(pool, key) {                           // 3 misiones distintas para ese día/semana
+  const r = rng(hashStr(key)), idx = pool.map((_, i) => i);
+  for (let i = idx.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [idx[i], idx[j]] = [idx[j], idx[i]]; }
+  return idx.slice(0, 3).map(i => ({ i, p: 0, c: 0 }));
+}
+function ensureMissions() {                           // renueva las misiones cuando cambia el día o la semana
+  const now = new Date(), dk = dayKey(now), wk = dayKey(weekStart(now));
+  if (!P.mis || !Array.isArray(P.mis.d)) P.mis = { dk: '', wk: '', d: [], w: [], db: 0, wb: 0 };
+  if (P.mis.dk !== dk) { P.mis.dk = dk; P.mis.d = pick3(DAILY, 'D' + dk); P.mis.db = 0; save(); }
+  if (P.mis.wk !== wk) { P.mis.wk = wk; P.mis.w = pick3(WEEKLY, 'W' + wk); P.mis.wb = 0; save(); }
+}
+const leftText = ms => {
+  const m = Math.max(1, Math.ceil(ms / 60000));
+  if (m < 60) return m + ' min';
+  const h = Math.floor(m / 60);
+  return h < 48 ? h + ' h ' + (m % 60) + ' min' : Math.ceil(h / 24) + ' días';
+};
+
+/* ---------- Monedas ---------- */
+const coinX = n => Math.round(n * CONFIG.COIN_X);
+function refreshCoins() { document.querySelectorAll('.coinval').forEach(e => { e.textContent = P.coins; }); }
+function addCoins(n) { if (n > 0) { P.coins += n; P.st.earned += n; save(); refreshCoins(); } }
+const claimable = () => { ensureMissions(); return ['d', 'w'].reduce((a, k) => a + P.mis[k].filter(m => !m.c && m.p >= POOL[k][m.i].t).length, 0); };
+function refreshBadges() {
+  const c = claimable();
+  document.querySelectorAll('.dot:not(.dd):not(.da):not(.dc-dot)').forEach(e => e.classList.toggle('hidden', c === 0));
+  document.querySelectorAll('.dot.dc-dot').forEach(e => e.classList.toggle('hidden', c === 0 && dailyRecord().completed));
+  document.querySelectorAll('.dot.da').forEach(e => e.classList.toggle('hidden', !P.newAch));
+}
+// Premio por partida: se paga una sola vez aunque se reviva (o = S o TET)
+function award(o, total) {
+  const n = Math.max(0, coinX(total) - (o.paid || 0));
+  o.paid = (o.paid || 0) + n; o.coinsGot = o.paid; addCoins(n); return n;
+}
+const coinLine = o => (o.coinsGot ? `<div class="coinline">+${o.coinsGot} ${ICON.coin}</div>` : '');
+
+let saveT = 0;
+const saveSoon = () => { clearTimeout(saveT); saveT = setTimeout(save, 1200); };
+function track(k, n = 1) {                            // registra progreso en misiones, estadísticas y logros
+  ensureMissions(); statEvent(k, n);
+  let done = 0;
+  [['d', DAILY], ['w', WEEKLY]].forEach(([key, pool]) => P.mis[key].forEach(m => {
+    const t = pool[m.i]; if (t.k !== k || m.c || m.p >= t.t) return;
+    m.p = t.m === 'max' ? Math.max(m.p, n) : m.p + n;
+    if (m.p >= t.t) { m.p = t.t; done++; }
+  }));
+  if (done) { save(); toast(done > 1 ? '¡Misiones completadas! Cóbralas en la Tienda' : '¡Misión completada! Cóbrala en la Tienda'); sfx.coin(); refreshBadges(); }
+  else saveSoon();
+  checkAch(); updateMChip();
+}
+function endStats(score, o = S) {                     // estadísticas al terminar una partida (una vez por partida)
+  if (!o.counted) { o.counted = 1; track('games'); }
+  track('score_total', Math.max(0, score - (o.tt || 0))); o.tt = score; track('score_game', score);
+}
+function claim(key, idx) {
+  const m = P.mis[key][idx], t = POOL[key][m.i];
+  if (m.c || m.p < t.t) return;
+  m.c = 1; const r = coinX(t.r); addCoins(r); addXp(10); sfx.coin();
+  let msg = '+' + r + ' monedas';
+  const bk = key === 'd' ? 'db' : 'wb';
+  if (P.mis[key].every(x => x.c) && !P.mis[bk]) { P.mis[bk] = 1; const b = coinX(key === 'd' ? DAILY_BONUS : WEEKLY_BONUS); addCoins(b); msg += ` + ${b} de bonus`; }
+  save(); toast(msg); refreshBadges(); renderShop();
+}
+const adsToday = () => (P.ads && P.ads.d === dayKey(new Date()) ? P.ads.n : 0);
+
+/* ---------- Pantalla de la tienda ---------- */
+const shopEl = $('shop');
+let shopTab = 'missions';
+function openShop(tab) {
+  if (tab) shopTab = tab;
+  ov.classList.add('hidden'); renderShop(); shopEl.classList.remove('hidden');
+}
+function closeShop() { shopEl.classList.add('hidden'); refreshCoins(); refreshBadges(); updateMChip(); }
+
+const thumbs = {};
+function skinThumb(i) {
+  if (thumbs[i]) return thumbs[i];
+  const k = SKINS[i], B = 44, pad = cellPad(B, k.style, 1), W = B + pad * 2, c = document.createElement('canvas'), ds = 26 / B;
+  c.width = W * 3; c.height = W;
+  const x = c.getContext('2d');
+  [0, 3, 5].forEach((ci, j) => {
+    if (k.assetSet === 'blockPuzzleKit') {
+      const image = blockKitImage(k, k.pal[ci]);
+      if (image) x.drawImage(image, j * W + pad, pad, B, B);
+      else paintCell(x, j * W + pad, pad, B, k.pal[ci], 'gloss', 1);
+    } else {
+      paintCell(x, j * W + pad, pad, B, k.pal[ci], k.style, 1);
+    }
+  });
+  return (thumbs[i] = { url: c.toDataURL(), w: Math.round(W * 3 * ds), h: Math.round(W * ds) });
+}
+function themePrev(th) {
+  const v = th.vars, cells = bg => `<i style="background:${bg}"></i>`.repeat(8);
+  if (!v) return `<div class="tp" style="background:#14172b"><div class="b" style="background:#232848">${cells('#2d3359')}</div><div class="a" style="background:#7d8bff"></div></div>`;
+  return `<div class="tp" data-theme-art="${th.id}" style="background:${v['--bg']}"><div class="b" style="background:${v['--board']}">${cells(v['--cell'])}</div><div class="a" style="background:${v['--accent']}"></div></div>`;
+}
+function itemBtn(kind, id, price, eq, owned) {
+  if (eq) return '<span class="sc-on">Equipado</span>';
+  if (owned) return `<button class="sc-btn" data-a="sh_equip" data-kind="${kind}" data-id="${id}">Usar</button>`;
+  return `<button class="sc-buy${P.coins < price ? ' poor' : ''}" data-a="sh_buy" data-kind="${kind}" data-id="${id}">${price} ${ICON.coin}</button>`;
+}
+function skinsHtml() {
+  return '<div class="sgrid">' + SKINS.map((k, i) => {
+    const th = skinThumb(i), eq = P.skin === i, ow = owns('skins', i);
+    return `<div class="sc${eq ? ' eq' : ''}"><div class="sc-prev"><img src="${th.url}" width="${th.w}" height="${th.h}" alt=""></div><b>${k.name}</b><small>${k.note || ''}</small>${k.motion ? '<span class="sc-motion">Animación viva</span>' : ''}${itemBtn('skins', i, k.price, eq, ow)}</div>`;
+  }).join('') + '</div>';
+}
+function themesHtml() {
+  return '<div class="sgrid">' + THEMES.map(t => {
+    const eq = P.theme === t.id, ow = owns('themes', t.id);
+    return `<div class="sc${eq ? ' eq' : ''}"><div class="sc-prev">${themePrev(t)}</div><b>${t.name}</b><small>${t.note}</small>${itemBtn('themes', t.id, t.price, eq, ow)}</div>`;
+  }).join('') + '</div>';
+}
+function missionRow(key, m, idx) {
+  const t = POOL[key][m.i], done = m.p >= t.t, pct = Math.min(100, Math.round(m.p / t.t * 100)), r = coinX(t.r);
+  return `<div class="ms${m.c ? ' got' : ''}"><div class="ms-t"><b>${t.text}</b><div class="bar"><i style="width:${pct}%"></i></div><small>${Math.min(m.p, t.t)} / ${t.t}</small></div>` +
+    (m.c ? '<span class="ms-ok">✓</span>'
+      : done ? `<button class="ms-claim" data-a="sh_claim" data-key="${key}" data-i="${idx}">Cobrar<span>+${r} ${ICON.coin}</span></button>`
+      : `<span class="ms-r">+${r} ${ICON.coin}</span>`) + '</div>';
+}
+function missionsHtml() {
+  const now = new Date(), tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+  const nextWeek = weekStart(now); nextWeek.setDate(nextWeek.getDate() + 7);
+  const left = Math.max(0, CONFIG.COIN_AD_PER_DAY - adsToday());
+  const block = (key, title, ms, bonus, got) => `<div class="sh-sec"><h3>${title}<small>Se renuevan en ${leftText(ms)}</small></h3>
+    ${P.mis[key].map((m, i) => missionRow(key, m, i)).join('')}
+    <div class="bonus">Bonus por cobrar las 3: <b>+${coinX(bonus)} ${ICON.coin}</b>${got ? ' ✓' : ''}</div></div>`;
+  const rewardedCard = Ads.hasRewarded() ? `<div class="ad-card"><div><b>Monedas gratis</b><small>Mira un anuncio y gana +${coinX(CONFIG.COIN_AD)} (quedan ${left} hoy)</small></div>
+    <button class="btn mini" data-a="sh_ad" ${left ? '' : 'disabled'}>Ver anuncio</button></div>` : '';
+  return dailyChallengeHtml() + rewardedCard
+    + block('d', 'Misiones diarias', tomorrow - now, DAILY_BONUS, P.mis.db)
+    + block('w', 'Misiones semanales', nextWeek - now, WEEKLY_BONUS, P.mis.wb);
+}
+function dailyGiftShopHtml() {
+  const s = drState();
+  const tiles = DAILY_R.map((r, i) => `<div class="dr${i < s.day ? ' done' : ''}${!s.claimed && i === s.day ? ' cur' : ''}${i === 6 ? ' big' : ''}"><small>Día ${i+1}</small>${ICON.coin}<b>${coinX(r)}</b>${i < s.day ? '<i class="ck">✓</i>' : ''}</div>`).join('');
+  return `<section class="sh-sec daily-gift-shop"><h3>Regalo diario <small>Recompensa por volver a jugar</small></h3><p>${s.claimed ? 'Ya recogiste el regalo de hoy. Vuelve mañana para continuar la racha.' : 'Tu regalo te espera. Entra cada día para conseguir más monedas; el séptimo día incluye una recompensa especial.'}</p><div class="drg">${tiles}</div><button class="btn" data-a="m_daily">${s.claimed ? 'Ver regalo de hoy' : 'Abrir regalo diario'}</button></section>`;
+}
+function renderShop() {
+  ensureMissions();
+  const body = shopEl.querySelector('.sh-body'), st = body ? body.scrollTop : 0;
+  const tabs = [['missions', 'Misiones'], ['dailygift', 'Regalo diario'], ['skins', 'Bloques 3D'], ['themes', 'Temas']].map(([k, n]) =>
+    `<button class="sh-tab${shopTab === k ? ' on' : ''}" data-a="sh_tab" data-tab="${k}">${n}${k === 'missions' ? `<i class="dot dc-dot${(claimable() || !dailyRecord().completed) ? '' : ' hidden'}"></i>` : ''}</button>`).join('');
+  shopEl.innerHTML = `<div class="sh-head"><button class="sh-back" data-a="sh_close" aria-label="Volver">‹</button><div class="sh-title"><h2>Tienda</h2><small>Personaliza tu experiencia</small></div>
+      <div class="coinchip">${ICON.coin}<b class="coinval">${P.coins}</b></div></div>
+    <div class="sh-tabs">${tabs}</div>
+    <div class="sh-body"><div class="rk-ad-slot rk-ad-shop" data-ad-slot="shop-banner" role="complementary" aria-label="Espacio reservado para publicidad">
+        <span class="rk-ad-label">PUBLICIDAD</span><span class="rk-ad-message">Espacio reservado para anuncio</span>
+      </div>${shopTab === 'missions' ? missionsHtml() : shopTab === 'dailygift' ? dailyGiftShopHtml() : shopTab === 'skins' ? skinsHtml() : themesHtml()}</div>`;
+  shopEl.querySelector('.sh-body').scrollTop = st;
+}
+function shopEquip(kind, id) {
+  if (kind === 'skins') P.skin = +id; else { P.theme = id; applyTheme(id); }
+  save(); sfx.theme(); renderShop(); redraw();
+}
+function shopBuy(kind, id) {
+  const key = kind === 'skins' ? +id : id, item = kind === 'skins' ? SKINS[key] : THEMES.find(t => t.id === id);
+  if (owns(kind, key)) return shopEquip(kind, id);
+  if (P.coins < item.price) { toast(`Te faltan ${item.price - P.coins} monedas. ¡Cobra misiones!`); return sfx.bad(); }
+  P.coins -= item.price; P.owned[kind].push(key); P.st.buys++; save(); refreshCoins(); checkAch();
+  sfx.unlock(); toast('¡Comprado! ' + item.name); shopEquip(kind, id);
+}
+function shopAd() {                                   // recompensa disponible solo si existe un anuncio nativo real
+  if (!Ads.hasRewarded()) return toast('Los anuncios todavía no están conectados en esta versión.');
+  if (adsToday() >= CONFIG.COIN_AD_PER_DAY) return toast('Vuelve mañana para más monedas');
+  const n = coinX(CONFIG.COIN_AD);
+  shopEl.classList.add('hidden');
+  Ads.rewarded(() => {
+    P.ads = { d: dayKey(new Date()), n: adsToday() + 1 }; addCoins(n); toast('+' + n + ' monedas'); sfx.coin(); openShop('missions');
+  }, () => openShop('missions'), '+' + n + ' MONEDAS');
+}
+function shopAction(a, d) {
+  if (a === 'sh_open') openShop(d.tab);
+  else if (a === 'sh_close') closeShop();
+  else if (a === 'sh_tab') { shopTab = d.tab; renderShop(); shopEl.querySelector('.sh-body').scrollTop = 0; }
+  else if (a === 'sh_claim') claim(d.key, +d.i);
+  else if (a === 'sh_ad') shopAd();
+  else if (a === 'sh_daily') startDailyChallenge();
+  else if (a === 'sh_buy') shopBuy(d.kind, d.id);
+  else if (a === 'sh_equip') shopEquip(d.kind, d.id);
+}
+
+
+
+/* =====================================================================
+   META · perfil, estadísticas, logros, regalo diario, ajustes y extras
+   ===================================================================== */
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const fmtTime = s => { const m = Math.floor(s / 60), h = Math.floor(m / 60); return h ? `${h} h ${m % 60} min` : `${m} min`; };
+const pageEl = $('page');
+let pageKind = '';
+
+/* ---------- Nivel de jugador (XP) y rango ---------- */
+const xpNeed = lv => 90 + lv * 35;                     // XP para pasar del nivel lv al siguiente
+function playerLevel() {
+  let lv = 1, x = P.xp;
+  while (x >= xpNeed(lv)) { x -= xpNeed(lv); lv++; }
+  return { lv, cur: x, need: xpNeed(lv) };
+}
+const RANKS = [[1, 'Novato'], [5, 'Aprendiz'], [10, 'Constructor'], [15, 'Estratega'], [20, 'Maestro'], [30, 'Gran maestro'], [45, 'Leyenda']];
+const rankOf = lv => RANKS.filter(r => lv >= r[0]).pop()[1];
+function addXp(n) {
+  if (!(n > 0)) return;
+  const before = playerLevel().lv;
+  P.xp += Math.round(n);
+  const a = playerLevel();
+  if (a.lv > before) {                                 // subir de nivel da monedas
+    const r = coinX(15 + 5 * a.lv);
+    addCoins(r); sfx.levelup(); toast(`¡Nivel de jugador ${a.lv}! +${r} monedas`);
+  }
+  saveSoon();
+}
+
+/* ---------- Estadísticas: se alimentan de los mismos eventos que las misiones ---------- */
+function statEvent(k, n) {
+  const st = P.st;
+  if (k === 'games') st.games += n;
+  else if (k === 'lines') st.lines += n;
+  else if (k === 'perfect') st.perfect += n;
+  else if (k === 'pieces') st.pieces += n;
+  else if (k === 'tet4') st.tet4 += n;
+  else if (k === 'streak') st.streak = Math.max(st.streak, n);
+  else if (k === 'score_game') st.score = Math.max(st.score, n);
+  const xp = { lines: 2, games: 10, levels: 25, perfect: 30 }[k];
+  if (xp) addXp(xp * n); else if (k === 'score_total') addXp(n / 40);
+}
+const playing = () => !document.hidden && (TET.on ? (!TET.over && !tetBlocked() && !!TET.cur) : (!S.over && S.moves > 0 && !blocked()));
+setInterval(() => { if (playing()) { P.st.time++; if (P.st.time % 20 === 0) save(); } }, 1000);     // tiempo jugado
+
+const STAT_ITEMS = () => [
+  ['Partidas', P.st.games], ['Líneas limpiadas', P.st.lines], ['Mejor racha', '×' + P.st.streak],
+  ['Tableros vacíos', P.st.perfect], ['Piezas colocadas', P.st.pieces], ['Tiempo jugado', fmtTime(P.st.time)],
+  ['Récord infinito', P.best], ['Récord clásico', P.tbest || 0], ['Niveles superados', Object.keys(P.stars).length],
+  ['Estrellas', totalStars()], ['Monedas ganadas', P.st.earned], ['Logros', achCount() + '/' + ACH.length],
+];
+
+/* ---------- Logros ---------- */
+const ACH = [
+  { id: 'first',    n: 'Primeros pasos',    d: 'Termina tu primera partida',              t: 1,    r: 10,  v: () => P.st.games },
+  { id: 'games25',  n: 'Constante',         d: 'Termina 25 partidas',                     t: 25,   r: 40,  v: () => P.st.games },
+  { id: 'games100', n: 'Veterano',          d: 'Termina 100 partidas',                    t: 100,  r: 120, v: () => P.st.games },
+  { id: 'lines100', n: 'Limpiador',         d: 'Limpia 100 líneas',                       t: 100,  r: 40,  v: () => P.st.lines },
+  { id: 'lines1k',  n: 'Máquina de líneas', d: 'Limpia 1000 líneas',                      t: 1000, r: 150, v: () => P.st.lines },
+  { id: 'streak5',  n: 'En racha',          d: 'Haz una racha de 5 limpiezas seguidas',   t: 5,    r: 30,  v: () => P.st.streak },
+  { id: 'streak8',  n: 'Imparable',         d: 'Haz una racha de 8 limpiezas seguidas',   t: 8,    r: 80,  v: () => P.st.streak },
+  { id: 'perfect1', n: 'Tablero impecable', d: 'Deja el tablero vacío',                   t: 1,    r: 40,  v: () => P.st.perfect },
+  { id: 'perfect10', n: 'Perfeccionista',   d: 'Deja el tablero vacío 10 veces',          t: 10,   r: 150, v: () => P.st.perfect },
+  { id: 'score1k',  n: 'Mil puntos',        d: 'Consigue 1000 puntos en una partida',     t: 1000, r: 30,  v: () => P.st.score },
+  { id: 'score5k',  n: 'Gran marca',        d: 'Consigue 5000 puntos en una partida',     t: 5000, r: 100, v: () => P.st.score },
+  { id: 'levels10', n: 'Explorador',        d: 'Supera 10 niveles',                       t: 10,   r: 50,  v: () => Object.keys(P.stars).length },
+  { id: 'levels30', n: 'Conquistador',      d: 'Supera 30 niveles',                       t: 30,   r: 150, v: () => Object.keys(P.stars).length },
+  { id: 'stars30',  n: 'Cielo estrellado',  d: 'Reúne 30 estrellas',                      t: 30,   r: 80,  v: () => totalStars() },
+  { id: 'quad',     n: 'Cuádruple',         d: 'Limpia 4 líneas a la vez en el clásico',  t: 1,    r: 60,  v: () => P.st.tet4 },
+  { id: 'tet5k',    n: 'Maestro clásico',   d: 'Consigue 5000 puntos en el clásico',      t: 5000, r: 80,  v: () => P.tbest || 0 },
+  { id: 'buy1',     n: 'Estilo propio',     d: 'Compra tu primer artículo en la tienda',  t: 1,    r: 20,  v: () => P.st.buys },
+  { id: 'week',     n: 'Siempre presente',  d: 'Cobra 7 días seguidos el regalo diario',  t: 1,    r: 100, v: () => P.st.cycles },
+];
+const achCount = () => ACH.filter(a => P.ach[a.id]).length;
+function checkAch() {
+  const got = [];
+  ACH.forEach(a => {
+    if (P.ach[a.id] || a.v() < a.t) return;
+    P.ach[a.id] = 1; got.push(a);
+    addCoins(coinX(a.r)); addXp(25);
+  });
+  if (!got.length) return;
+  P.newAch = 1; save(); refreshBadges(); sfx.achievement();
+  toast(got.length > 1 ? `¡${got.length} logros desbloqueados!` : `Logro desbloqueado: ${got[0].n} (+${coinX(got[0].r)})`);
+  if (pageKind === 'ach') renderPage('ach');
+}
+
+/* ---------- Regalo diario: 7 días seguidos, sube cada día ---------- */
+const DAILY_R = [10, 15, 20, 25, 30, 40, 75];
+function drState() {
+  const now = dayKey(new Date()), y = dayKey(new Date(Date.now() - 864e5));
+  const claimed = P.dr.last === now;
+  const day = claimed ? P.dr.n : (P.dr.last === y ? P.dr.n % 7 : 0);       // si se pasa un día, vuelve al día 1
+  return { today: now, claimed, day };
+}
+function showDaily() {
+  const s = drState();
+  const tiles = DAILY_R.map((r, i) => {
+    const done = i < s.day, cur = !s.claimed && i === s.day;
+    return `<div class="dr${done ? ' done' : ''}${cur ? ' cur' : ''}${i === 6 ? ' big' : ''}"><small>Día ${i + 1}</small>${ICON.coin}<b>${coinX(r)}</b>${done ? '<i class="ck">✓</i>' : ''}</div>`;
+  }).join('');
+  ov.innerHTML = `<div class="card"><h2>Regalo diario</h2>
+    <p>${s.claimed ? 'Ya cobraste el de hoy. ¡Vuelve mañana!' : 'Entra cada día y gana más monedas. Si te saltas un día, vuelves al día 1.'}</p>
+    <div class="drg">${tiles}</div>
+    ${s.claimed ? '' : `<button class="btn" data-a="m_dclaim">Cobrar +${coinX(DAILY_R[s.day])}</button>`}
+    <button class="btn ghost" data-a="m_close">${s.claimed ? 'Cerrar' : 'Más tarde'}</button></div>`;
+  ov.classList.remove('hidden');
+}
+function dailyClaim() {
+  const s = drState(); if (s.claimed) return;
+  const r = coinX(DAILY_R[s.day]);
+  addCoins(r); addXp(10);
+  P.dr = { last: s.today, n: s.day + 1 };
+  if (P.dr.n === 7) P.st.cycles++;
+  save(); sfx.coin(); toast(`+${r} monedas`);
+  checkAch(); refreshBadges(); showDaily();
+}
+let dailyShown = false;
+const maybeDaily = () => { if (!dailyShown && P.tut && !drState().claimed) { dailyShown = true; showDaily(); } };
+
+/* ---------- Compartir resultado ---------- */
+function shareText() {
+  if (lastGame === 'tet') return `Hice ${TET.score} puntos en el modo clásico`;
+  if (LVL()) return S.over && S.result && S.result.stars ? `Superé el nivel ${S.lv} con ${S.result.stars} estrellas` : `Voy por el nivel ${S.lv}`;
+  return `Hice ${S.score} puntos en el modo infinito`;
+}
+async function shareScore() {
+  const msg = `${shareText()} en Raddykall Puzzle. ¿Puedes superarme?` + (CONFIG.STORE_URL ? ' ' + CONFIG.STORE_URL : '');
+  try { if (navigator.share) { await navigator.share({ title: 'Raddykall Puzzle', text: msg }); return; } }
+  catch (e) { if (e && e.name === 'AbortError') return; }
+  try { await navigator.clipboard.writeText(msg); toast('Copiado: pégalo donde quieras'); }
+  catch (e) { toast('No se pudo compartir en este dispositivo'); }
+}
+
+/* ---------- Misión visible durante la partida (ocupa la franja libre sobre el tablero) ---------- */
+function updateMChip() {
+  const el = $('mchip'); if (!el) return;
+  ensureMissions();
+  if (S.dailyChallenge && !S.over && !TET.on) {
+    const spec = dailyChallengeSpec(S.dailyChallengeDate || dayKey(new Date())), value = dailyMetric(S, spec);
+    const pct = Math.min(100, Math.round(value / spec.target * 100));
+    el.classList.remove('hidden');
+    el.innerHTML = `${ICON.coin}<span>Puzzle diario · ${dailyShortName(spec)}</span><b>${Math.min(value, spec.target)}/${spec.target}</b><i style="width:${pct}%"></i>`;
+    return;
+  }
+  let pick = null;
+  for (const [key, pool] of [['d', DAILY], ['w', WEEKLY]]) {          // la más avanzada; primero las diarias
+    P.mis[key].forEach(m => {
+      const t = pool[m.i];
+      if (!m.c && m.p < t.t) { const f = m.p / t.t; if (!pick || f > pick.f) pick = { t, m, f }; }
+    });
+    if (pick) break;
+  }
+  el.classList.toggle('hidden', !pick || TET.on || (S.streak >= 2 && !S.over));       // la insignia de racha tiene prioridad
+  if (pick) el.innerHTML = `${ICON.coin}<span>${pick.t.text}</span><b>${pick.m.p}/${pick.t.t}</b><i style="width:${Math.round(pick.f * 100)}%"></i>`;
+}
+
+/* ---------- Capítulos del mapa de niveles con cofre ---------- */
+const CH_NAMES = ['Primeros pasos', 'El jardín', 'Ciudad de bloques', 'Montañas de hielo', 'Desierto dorado', 'Bosque encantado', 'Ciudad flotante', 'Cumbre estelar'];
+function chestOpen(c) {
+  const size = CONFIG.CHAPTER_SIZE, a = c * size + 1, b = Math.min(CONFIG.LEVEL_COUNT, a + size - 1);
+  let done = 0; for (let n = a; n <= b; n++) if (P.stars[n]) done++;
+  if (P.ch[c] || done < b - a + 1) return;
+  P.ch[c] = 1; const r = coinX(CONFIG.CHEST_COINS + 10 * c);
+  addCoins(r); addXp(30); save(); sfx.chest(); confetti(40); toast(`¡Cofre abierto! +${r} monedas`);
+  const sc = ov.querySelector('.card') ? ov.querySelector('.card').scrollTop : 0;
+  showLevels(); if (ov.querySelector('.card')) ov.querySelector('.card').scrollTop = sc;
+}
+
+/* ---------- Páginas: Perfil · Logros · Ajustes ---------- */
+function profileHtml() {
+  const pl = playerLevel(), pct = Math.round(pl.cur / pl.need * 100);
+  const stats = STAT_ITEMS().map(([l, v]) => `<div class="stc"><b>${v}</b><small>${l}</small></div>`).join('');
+  return `<div class="pf-card"><div class="av">${pl.lv}</div><div class="pf-info">
+      <input class="nm" maxlength="14" value="${esc(P.name)}" aria-label="Nombre del jugador" autocomplete="off">
+      <div class="rank">${rankOf(pl.lv)}</div><div class="xpbar"><i style="width:${pct}%"></i></div>
+      <small class="xpt">Nivel ${pl.lv} — ${pl.cur}/${pl.need} XP</small></div></div>
+    <div class="sh-sec"><h3>Estadísticas</h3></div><div class="stg">${stats}</div>
+    <div class="sh-sec"><h3>Logros<small>${achCount()}/${ACH.length}</small></h3></div>
+    <button class="set-btn" data-a="m_ach">${ICON.trophy}<span>Ver todos los logros</span><em>›</em></button>`;
+}
+function achHtml() {
+  const rows = ACH.slice().sort((a, b) => !!P.ach[a.id] - !!P.ach[b.id]).map(a => {
+    const v = Math.min(a.v(), a.t), got = !!P.ach[a.id], pct = Math.round(v / a.t * 100), r = coinX(a.r);
+    return `<div class="ach${got ? ' got' : ''}"><div class="medal">${ICON.trophy}</div>
+      <div class="ach-t"><b>${a.n}</b><small>${a.d}</small><div class="bar"><i style="width:${pct}%"></i></div></div>
+      <div class="ach-r">${got ? '<span class="ms-ok">✓</span>' : `<span class="ms-r">+${r} ${ICON.coin}</span><small>${v}/${a.t}</small>`}</div></div>`;
+  }).join('');
+  return `<div class="bonus" style="text-align:left;padding:6px 2px 10px">Desbloqueados: <b>${achCount()}/${ACH.length}</b></div>${rows}`;
+}
+function settingsHtml() {
+  const privacyLabel = ({es:'Preferencias de anuncios',en:'Ad privacy options',it:'Opzioni privacy annunci',fr:'Options de confidentialité des annonces'})[P.lang] || 'Preferencias de anuncios';
+  const privacyOptionsRow = window.__raddykallAdmobPrivacyRequired ? `<button class="set-btn" data-a="admob_privacy"><span>${privacyLabel}</span><em>›</em></button>` : '';
+  return `<div class="set-sec">Sonido</div>
+    <div class="dock">${dockBtns()}</div>
+    <div class="set-row"><span>Volumen de la música</span><input type="range" data-v="mv" min="0" max="1" step="0.05" value="${P.mv}"></div>
+    <label class="set-row"><span>Música de fondo</span><select data-music-track aria-label="Música de fondo" style="min-width:150px;max-width:55%;border:0;border-radius:10px;padding:8px;background:var(--bg);color:var(--text);font:inherit;font-weight:800">
+      <option value="calma" ${P.musicTrack==='calma'?'selected':''}>Calma ambiental</option><option value="aventura" ${P.musicTrack==='aventura'?'selected':''}>Aventura</option><option value="synthwave" ${P.musicTrack==='synthwave'?'selected':''}>Synthwave</option><option value="piano" ${P.musicTrack==='piano'?'selected':''}>Piano suave</option><option value="lofi" ${P.musicTrack==='lofi'?'selected':''}>Lo-fi chill</option><option value="cristal" ${P.musicTrack==='cristal'?'selected':''}>Cristal mágico</option>
+    </select></label>
+    <div class="set-row"><span>Volumen de los efectos</span><input type="range" data-v="sv" min="0" max="1" step="0.05" value="${P.sv}"></div>
+    <div class="set-sec">Juego</div>
+    <label class="set-row language-row"><span>Idioma</span><select data-lang-select aria-label="Idioma" style="min-width:140px;max-width:52%;border:0;border-radius:10px;padding:8px;background:var(--bg);color:var(--text);font:inherit;font-weight:800"><option value="es" ${P.lang==='es'?'selected':''}>Español</option><option value="en" ${P.lang==='en'?'selected':''}>English</option><option value="it" ${P.lang==='it'?'selected':''}>Italiano</option><option value="fr" ${P.lang==='fr'?'selected':''}>Français</option></select></label>
+    <button class="set-btn" data-a="gfx">${ICON.gfx}<span>Gráficos</span><em><b class="gfxcur">${G.name}</b> ›</em></button>
+    <button class="set-btn" data-a="tut">${ICON.help}<span>Cómo jugar</span><em>›</em></button>
+    <div class="set-sec">Información</div>
+    ${privacyOptionsRow}
+    <button class="set-btn" data-a="m_legal" data-k="privacy"><span>Política de privacidad</span><em>›</em></button>
+    <button class="set-btn" data-a="m_legal" data-k="terms"><span>Términos de uso</span><em>›</em></button>
+    <button class="set-btn" data-a="m_legal" data-k="about"><span>Acerca de</span><em>›</em></button>
+    <div class="set-sec">Datos</div>
+    <button class="set-btn danger" data-a="m_reset"><span>Restablecer progreso</span><em>›</em></button>
+    <div class="ver">Raddykall Puzzle · v${CONFIG.APP_VERSION}</div>`;
+}
+function renderPage(kind) {
+  const old = pageEl.querySelector('.sh-body'), st = old && pageEl.dataset.k === kind ? old.scrollTop : 0;
+  pageKind = kind; pageEl.dataset.k = kind;
+  const title = { profile: 'Perfil', ach: 'Logros', settings: 'Ajustes' }[kind];
+  pageEl.innerHTML = `<div class="sh-head"><button class="sh-back" data-a="m_back" aria-label="Volver">‹</button><h2>${title}</h2></div>
+    <div class="sh-body">${kind === 'profile' ? profileHtml() : kind === 'ach' ? achHtml() : settingsHtml()}</div>`;
+  pageEl.querySelector('.sh-body').scrollTop = st;
+  pageEl.classList.remove('hidden');
+}
+function closePage() { pageEl.classList.add('hidden'); pageKind = ''; showMenu(); }
+pageEl.addEventListener('input', e => {                    // volúmenes: se oyen al mover el control
+  const v = e.target.dataset && e.target.dataset.v;
+  if (v) { P[v] = +e.target.value; snd.sync(); }
+});
+pageEl.addEventListener('change', e => {
+  const t = e.target;
+  if (t.dataset && t.dataset.v) save();
+  else if (t && t.hasAttribute && t.hasAttribute('data-lang-select')) { P.lang = ['es','en','it','fr'].includes(t.value) ? t.value : 'es'; save(); document.documentElement.lang = P.lang; window.dispatchEvent(new CustomEvent('raddykall:language-change', {detail:{lang:P.lang}})); toast(({es:'Idioma actualizado',en:'Language updated',it:'Lingua aggiornata',fr:'Langue mise à jour'})[P.lang]); renderPage('settings'); }
+  else if (t && t.hasAttribute && t.hasAttribute('data-music-track')) { P.musicTrack = ['calma','aventura','synthwave','piano','lofi','cristal'].includes(t.value) ? t.value : 'calma'; save(); snd.setTrack(P.musicTrack); snd.previewMusic(); toast('Música: ' + ({calma:'Calma ambiental',aventura:'Aventura',synthwave:'Synthwave',piano:'Piano suave',lofi:'Lo-fi chill',cristal:'Cristal mágico'}[P.musicTrack])); }
+  else if (t.classList.contains('nm')) { P.name = t.value.trim().slice(0, 14) || 'Jugador'; t.value = P.name; save(); toast('Nombre guardado'); }
+});
+
+/* ---------- Información legal y restablecer ---------- */
+function showLegal(k) {
+  const link = CONFIG.PRIVACY_URL ? `<p><a href="${CONFIG.PRIVACY_URL}" target="_blank" rel="noopener">Leer la política de privacidad completa</a></p>` : '';
+  const T_ = {
+    privacy: ['Política de privacidad', `<p><b>Resumen.</b> Raddykall Puzzle guarda tu progreso (monedas, estrellas, compras y ajustes) únicamente en tu dispositivo. No pide cuenta ni datos personales.</p>
+      <p>Esta versión guarda el progreso y las preferencias del juego localmente en el dispositivo y no necesita una cuenta. También utiliza Google AdMob para mostrar banners publicitarios. Según el consentimiento, la configuración de anuncios y la legislación aplicable, Google y sus socios pueden tratar datos como identificadores publicitarios, dirección IP, información del dispositivo, diagnósticos y las interacciones con los anuncios para servirlos, medir su rendimiento, limitar su frecuencia y prevenir fraude.</p>
+      <p>La aplicación solicita la información de consentimiento mediante Google UMP cuando se inicia. Si aparece “Preferencias de anuncios” en Ajustes, puedes abrirla para revisar las opciones disponibles. Más información: <a href="https://policies.google.com/privacy" target="_blank" rel="noopener">Política de privacidad de Google</a> y <a href="https://support.google.com/admob/answer/6128543" target="_blank" rel="noopener">Políticas de AdMob</a>.</p>${link}`],
+    terms: ['Términos de uso', `<p>Raddykall Puzzle es de uso personal y gratuito. Las monedas y los artículos de la tienda son virtuales: no tienen valor real, no se pueden transferir ni canjear por dinero.</p>
+      <p>Si restableces el progreso o desinstalas la aplicación, se pierden los datos guardados en tu dispositivo.</p>`],
+    about: ['Acerca de', `<p><b>Raddykall Puzzle</b><br>Versión ${CONFIG.APP_VERSION}</p>
+      <p>Cuatro modos de juego, reto diario, tienda, misiones y logros. La música y los efectos de sonido se generan dentro del propio juego.</p>
+      <p>© ${new Date().getFullYear()} Raddykall. Todos los derechos reservados.</p>`],
+  }[k];
+  ov.innerHTML = `<div class="card"><h2>${T_[0]}</h2><div class="legal">${T_[1]}</div><button class="btn" data-a="m_close">Cerrar</button></div>`;
+  ov.classList.remove('hidden');
+}
+function resetAsk() {
+  ov.innerHTML = `<div class="card"><h2>¿Restablecer progreso?</h2>
+    <p>Se borrarán tus monedas, estrellas, compras, logros y estadísticas. Esta acción no se puede deshacer.</p>
+    <button class="btn danger" data-a="m_resetok">Sí, borrar todo</button><button class="btn ghost" data-a="m_close">Cancelar</button></div>`;
+  ov.classList.remove('hidden');
+}
+function resetDo() {
+  // Borra datos de todos los modos (bloques, clásico y match-3), también temas y progreso local.
+  try {
+    const remove = [PKEY, 'raddykall.settings'];
+    for (const key of remove) localStorage.removeItem(key);
+    const owned = []; for (let i=0; i<localStorage.length; i++) { const k=localStorage.key(i); if (k && /^(raddykall\.|blockpuzzle\.)/.test(k)) owned.push(k); }
+    owned.forEach(k=>localStorage.removeItem(k));
+  } catch (e) {}
+  try { sessionStorage.clear(); } catch (e) {}
+  ov.innerHTML = '<div class="card"><h2>Progreso restablecido</h2><p>Se han borrado los datos locales de todos los modos. El juego se reiniciará.</p><button class="btn" id="reset-reload">Continuar</button></div>';
+  ov.classList.remove('hidden');
+  const finish = () => { try { window.location.reload(); } catch (_) { try { window.location.href = window.location.href.split('#')[0]; } catch (__){ ov.classList.add('hidden'); showMenu(); } } };
+  const b = document.getElementById('reset-reload'); if (b) b.addEventListener('click', finish, {once:true});
+  setTimeout(finish, 900);
+}
+
+function metaAction(a, d) {
+  if (a === 'm_profile') renderPage('profile');
+  else if (a === 'm_ach') { P.newAch = 0; save(); refreshBadges(); renderPage('ach'); }
+  else if (a === 'm_set') renderPage('settings');
+  else if (a === 'm_back') closePage();
+  else if (a === 'm_daily') showDaily();
+  else if (a === 'm_dclaim') dailyClaim();
+  else if (a === 'm_close') ov.classList.add('hidden');
+  else if (a === 'm_chest') chestOpen(+d.ch);
+  else if (a === 'm_share') shareScore();
+  else if (a === 'm_reset') resetAsk();
+  else if (a === 'm_resetok') resetDo();
+  else if (a === 'm_legal') showLegal(d.k);
+  else if (a === 'admob_privacy') window.dispatchEvent(new Event('raddykall:show-admob-privacy-options'));
+}
+window.addEventListener('raddykall:admob-privacy-required', () => {
+  if (pageKind === 'settings') renderPage('settings');
+});
+
+
+/* ---------- Menú principal: barra de perfil y navegación inferior ---------- */
+const homeBar = () => {
+  const pl = playerLevel(), pct = Math.round(pl.cur / pl.need * 100);
+  return `<div class="hbar"><button class="prof" data-a="m_profile" aria-label="Perfil"><span class="av sm"><span>${pl.lv}</span></span>
+    <span class="pf"><b>${esc(P.name)}</b><small>${rankOf(pl.lv)}</small><i class="xp"><u style="width:${pct}%"></u></i></span></button>
+    <button class="coinchip home" data-a="sh_open" data-tab="skins" aria-label="Tienda">${HOME_ICONS.coin}<b class="coinval">${P.coins}</b></button></div>`;
+};
+const homeNav = () => `<div class="nav">
+  <button data-a="sh_open" data-tab="missions" aria-label="Misiones">${HOME_ICONS.missions}<small>Misiones</small><i class="dot${claimable() ? '' : ' hidden'}"></i></button>
+  <button data-a="sh_open" data-tab="skins" aria-label="Tienda">${HOME_ICONS.store}<small>Tienda</small></button>
+  <button data-a="m_ach" aria-label="Logros">${HOME_ICONS.trophy}<small>Logros</small><i class="dot da${P.newAch ? '' : ' hidden'}"></i></button>
+  <button data-a="m_profile" aria-label="Perfil">${HOME_ICONS.user}<small>Perfil</small></button>
+  <button data-a="m_set" aria-label="Ajustes">${HOME_ICONS.settings}<small>Ajustes</small></button></div>`;
+
+const canPlace = (p, r, c) => p.cells.every(([y, x]) => {
+  const gy = r + y, gx = c + x;
+  return gy >= 0 && gx >= 0 && gy < S.n && gx < S.n && !S.grid[gy][gx];
+});
+const fitsAnywhere = p => {
+  for (let r = 0; r < S.n; r++) for (let c = 0; c < S.n; c++) if (canPlace(p, r, c)) return true;
+  return false;
+};
+const fullLines = g => {
+  const rows = [], cols = [];
+  for (let i = 0; i < S.n; i++) {
+    if (g[i].every(v => v)) rows.push(i);
+    if (g.every(row => row[i])) cols.push(i);
+  }
+  return { rows, cols };
+};
+const fullness = () => {                       // fracción del tablero ocupada (0..1)
+  let f = 0;
+  for (const row of S.grid) for (const v of row) if (v) f++;
+  return f / (S.n * S.n);
+};
+const canPlaceOn = (g, p, r, c) => p.cells.every(([y, x]) => {
+  const gy = r + y, gx = c + x;
+  return gy >= 0 && gx >= 0 && gy < S.n && gx < S.n && !g[gy][gx];
+});
+function applyOn(g, p, r, c) {                  // copia del tablero con la pieza puesta y las líneas limpias
+  const h = g.map(row => row.slice()), n = S.n, rows = [], cols = [];
+  p.cells.forEach(([y, x]) => h[r + y][c + x] = 1);
+  for (let i = 0; i < n; i++) { if (h[i].every(Boolean)) rows.push(i); if (h.every(row => row[i])) cols.push(i); }
+  rows.forEach(y => h[y].fill(0)); cols.forEach(x => h.forEach(row => { row[x] = 0; }));
+  return h;
+}
+// ¿Se pueden colocar TODAS las piezas de la tanda, en algún orden? (búsqueda con límite)
+function playable(t) {
+  let budget = 700;
+  const dfs = (g, rest) => {
+    if (!rest.length) return true;
+    if (--budget < 0) return true;              // sin veredicto: se acepta
+    for (let i = 0; i < rest.length; i++) {
+      const p = rest[i], others = rest.filter((_, j) => j !== i);
+      for (let r = 0; r + p.h <= S.n; r++) for (let c = 0; c + p.w <= S.n; c++)
+        if (canPlaceOn(g, p, r, c) && dfs(applyOn(g, p, r, c), others)) return true;
+    }
+    return false;
+  };
+  return dfs(S.grid, t);
+}
+// Pieza que completa al menos una línea AHORA (null si ninguna). Prefiere las que limpian más.
+function helpfulPiece() {
+  const n = S.n, rc = Array(n).fill(0), cc = Array(n).fill(0), found = [];
+  for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) if (S.grid[y][x]) { rc[y]++; cc[x]++; }
+  SHAPES.forEach(sh => {
+    let best = 0;
+    for (let r = 0; r + sh.h <= n; r++) for (let c = 0; c + sh.w <= n; c++) {
+      if (!canPlace(sh, r, c)) continue;
+      const ar = {}, ac = {};
+      sh.cells.forEach(([y, x]) => { ar[r + y] = (ar[r + y] || 0) + 1; ac[c + x] = (ac[c + x] || 0) + 1; });
+      let lines = 0;
+      for (const y in ar) if (rc[y] + ar[y] === n) lines++;
+      for (const x in ac) if (cc[x] + ac[x] === n) lines++;
+      if (lines > best) best = lines;
+    }
+    if (best) found.push({ sh, best });
+  });
+  if (!found.length) return null;
+  found.sort((a, b) => b.best - a.best);
+  const top = found.slice(0, Math.max(3, Math.ceil(found.length / 3)));
+  return { ...top[Math.floor(gameplayRandom() * top.length)].sh, color: 1 + Math.floor(gameplayRandom() * 8) };
+}
+// Tanda de piezas "inteligente": jugable, con piezas que ayudan y alivio si el tablero se llena
+const newTray = (force, forceHelp) => {
+  const smart = !S.dailyChallenge && (force || (CONFIG.SMART_PIECES && S.level <= CONFIG.SMART_UNTIL_LEVEL));
+  const helpP = smart ? Math.min(1.0, CONFIG.HELP_CHANCE + CONFIG.HELP_FULL_BOOST * fullness()) : 0;
+  let t;
+  for (let i = 0; i < 60; i++) {
+    t = Array.from({ length: CONFIG.PIECES_PER_TURN }, randPiece);
+    if (!smart) return t;
+    if (forceHelp || gameplayRandom() < helpP) {
+      const h = helpfulPiece();
+      if (h) t[Math.floor(gameplayRandom() * t.length)] = h;
+    }
+    if (!t.some(fitsAnywhere)) continue;
+    if (CONFIG.SMART_SOLVABLE && !playable(t)) continue;
+    return t;
+  }
+  // Garantía de respaldo: construye una tanda colocando cada pieza en una simulación del tablero.
+  if (smart && CONFIG.SMART_SOLVABLE) {
+    let sim=S.grid.map(row=>row.slice()); const safe=[];
+    for(let k=0;k<CONFIG.PIECES_PER_TURN;k++) {
+      const opts=[];
+      for(const sh of SHAPES) for(let r=0;r+sh.h<=S.n;r++) for(let c=0;c+sh.w<=S.n;c++) if(canPlaceOn(sim,sh,r,c)) opts.push({sh,r,c});
+      if(!opts.length) break;
+      const pick=opts[Math.floor(gameplayRandom()*opts.length)];
+      safe.push({...pick.sh,color:1+Math.floor(gameplayRandom()*8)}); sim=applyOn(sim,pick.sh,pick.r,pick.c);
+    }
+    if(safe.length===CONFIG.PIECES_PER_TURN) return safe;
+  }
+  if (smart && !t.some(fitsAnywhere)) t[0] = { ...SHAPES[0], color: 1 + Math.floor(gameplayRandom() * 8) };   // último recurso: 1 celda
+  return t;
+};
+
+/* Coloca una pieza, puntúa, lanza efectos, limpia líneas y sube de nivel */
+function place(p, r, c) {
+  const t = performance.now(), s = L.cell;
+  p.cells.forEach(([y, x]) => {
+    S.grid[r + y][c + x] = p.color; S.placed.push({ y: r + y, x: c + x, t, d: (y + x) * 28 });
+    burst(L.x0 + (c + x + 0.5) * s, L.y0 + (r + y + 0.5) * s, colorOf(p.color), 2, 2.5);   // polvillo al caer
+  });
+  if (G.glow && !REDUCED) S.rings.push({ x: L.x0 + (c + p.w / 2) * s, y: L.y0 + (r + p.h / 2) * s, t, max: s * 1.9, w: 3, dur: 380, color: colorOf(p.color) });
+  if (G.edge && !REDUCED) S.edge = { t, color: colorOf(p.color) };
+  let pts = p.cells.length * CONFIG.POINTS_PER_CELL;
+  const { rows, cols } = fullLines(S.grid), lines = rows.length + cols.length;
+  S.moves++; sfx.place(); track('pieces', 1);
+  if (lines) {
+    S.streak++; S.comboMisses = 0; S.linesTotal += lines; S.maxStreak = Math.max(S.maxStreak, S.streak);
+    track('lines', lines); track('streak', S.streak); if (lines >= 3) track('multi', 1);
+    S.timeLeft = lineTime(); S.lastTick = 0;                   // limpiar una línea reinicia el reloj
+    const mult = Math.min(CONFIG.COMBO_MAX, 1 + CONFIG.COMBO_STEP * (S.streak - 1));
+    const gain = Math.round(lines * CONFIG.POINTS_PER_LINE * (1 + CONFIG.MULTILINE_BONUS * (lines - 1)) * mult);
+    pts += gain;
+    if (G.beams && !REDUCED) {                                  // rayos de luz por cada línea (Alto)
+      rows.forEach(y => S.beams.push({ row: true, i: y, t, color: S.grid[y][0] }));
+      cols.forEach(x => S.beams.push({ row: false, i: x, t, color: S.grid[0][x] }));
+    }
+    if (G.rings && !REDUCED) S.rings.push({ x: L.x0 + (c + p.w / 2) * s, y: L.y0 + (r + p.h / 2) * s, t, max: s * (3 + lines * 1.3), w: 5, dur: 540, color: T.dark ? '#ffffff' : T.accent });
+    if (G.sweep && !REDUCED) S.sweep = { t };
+    if (G.zoom && !REDUCED) S.zoom = { t, mag: Math.min(0.03, 0.008 + 0.005 * lines + 0.002 * S.streak) };
+    // Las celdas se apagan en onda, desde donde cayó la pieza hacia afuera
+    const cy = r + (p.h - 1) / 2, cx = c + (p.w - 1) / 2, set = new Set();
+    rows.forEach(y => { for (let x = 0; x < S.n; x++) set.add(y * S.n + x); });
+    cols.forEach(x => { for (let y = 0; y < S.n; y++) set.add(y * S.n + x); });
+    set.forEach(k => {
+      const y = Math.floor(k / S.n), x = k % S.n;
+      S.fx.push({ y, x, color: S.grid[y][x], t, delay: Math.hypot(y - cy, x - cx) * CONFIG.CLEAR_STAGGER_MS * G.stagger });
+      S.grid[y][x] = 0; if (S.stones?.[y]) S.stones[y][x] = false;
+    });
+    const perfect = S.grid.every(row => row.every(v => !v));
+    const tier = Math.min(5, lines + Math.floor((S.streak - 1) / 2));      // 1..5 → ¡Bien! … ¡Increíble!
+    if (perfect) { pts += CONFIG.PERFECT_BONUS; confetti(160); sfx.perfect(0.35); track('perfect', 1); }
+    else if (tier >= 4) confetti(30 + tier * 10);
+    if (perfect || tier >= 4) grantTool();                      // regalo por jugadas grandes
+    if (CONFIG.SHOW_PRAISE) S.popups.push({ kind: 'praise', tier: perfect ? 6 : tier, t });
+    S.popups.push({ kind: 'score', text: '+' + (gain + (perfect ? CONFIG.PERFECT_BONUS : 0)),
+                    sub: mult > 1 ? 'COMBO x' + mult.toFixed(2).replace(/\.?0+$/, '') : '', t });
+    S.shake = { t, mag: REDUCED ? 0 : CONFIG.SHAKE_PX * G.shake * Math.min(1, 0.25 + 0.2 * lines + 0.08 * S.streak) };
+    S.flash = G.shake ? { t, a: Math.min(0.4, 0.15 + 0.08 * lines) * (G.glow ? 1.1 : 1) } : null;
+    sfx.clear(lines, S.streak); vibe([15, 25, 15 + lines * 10]);
+  } else {
+    // Conserva los combos a partir de ×2 durante dos colocaciones sin limpiar.
+    // Una limpieza durante esa ventana sube la racha y reinicia comboMisses.
+    if (S.streak >= 2) {
+      S.comboMisses = (S.comboMisses || 0) + 1;
+      if (S.comboMisses > 2) { S.streak = 0; S.comboMisses = 0; }
+    } else { S.streak = 0; S.comboMisses = 0; }
+    vibe(8);
+  }
+  S.score += pts;
+  if (S.dailyChallenge) updateDailyChallengeProgress();
+  const lv = S.mode === 'lvl' ? S.level : Math.min(CONFIG.MAX_LEVEL, 1 + Math.floor(S.score / CONFIG.LEVEL_EVERY_POINTS));
+  if (lv > S.level) { S.level = lv; S.popups.push({ kind: 'level', text: 'NIVEL ' + lv, t }); confetti(70); sfx.levelup(0.45); grantTool(); }
+  updateHud(); updateCombo();
+}
+
+/* =====================================================================
+   5. AUDIO  ·  efectos + música procedural (WebAudio, sin archivos)
+   ===================================================================== */
+const snd = (() => {
+  let ac, sfxG, musG, padG, wetG, tmr = 0, nextT = 0, step = 0, bar = 0, noiseBuf = null, scene = 'puzzle';
+  const hz = m => 440 * Math.pow(2, (m - 69) / 12);
+  const PENTA = [0, 2, 4, 7, 9];
+
+  /* Progresión de 8 compases en Do mayor: [raíz respecto a Do4, notas del acorde] */
+  const PROG = [
+    [0,   [0,4,7,11]], [-3, [0,3,7,10]], [-7,  [0,4,7,11]], [-5, [0,4,7,9]],   // C  · Am · F  · G6
+    [-8,  [0,3,7,10]], [-3, [0,3,7,10]], [-10, [0,3,7,10]], [-5, [0,5,7,10]],  // Em · Am · Dm · Gsus
+  ];
+  /* Melodía tipo caja de música: por compás [paso, nota MIDI, duración en pasos] */
+  const MEL = [
+    [[0,76,3],[3,79,1],[4,76,2],[6,74,2]],
+    [[0,72,2],[2,76,2],[4,79,2],[6,76,2]],
+    [[0,77,3],[3,76,1],[4,72,4]],
+    [[0,74,2],[2,76,2],[4,74,4]],
+    [[0,71,3],[3,76,1],[4,79,2],[6,76,2]],
+    [[0,72,2],[2,76,2],[4,81,3],[7,79,1]],
+    [[0,77,3],[3,76,1],[4,74,2],[6,72,2]],
+    [[0,79,2],[2,77,2],[4,74,3],[7,72,1]],
+  ];
+  /* Patrones de arpegio (índice de nota del acorde por paso) */
+  const ARP = [[0,1,2,3,2,1,2,1], [0,2,1,3,1,2,3,2], [0,1,2,1,3,2,1,2]];
+
+  function init() {
+    if (ac) return;
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return;
+    ac = new AC();
+    const master = ac.createGain(); master.gain.value = 0.9; master.connect(ac.destination);
+    // Reverberación procedural ligera: impulso mono y cola más corta reducen CPU y memoria.
+    const conv = ac.createConvolver(), len = Math.floor(ac.sampleRate * 1.55), ir = ac.createBuffer(1, len, ac.sampleRate);
+    const impulse = ir.getChannelData(0);
+    for (let i = 0; i < len; i++) impulse[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 3.05);
+    conv.buffer = ir;
+    wetG = ac.createGain(); conv.connect(wetG); wetG.connect(master);
+    // Efectos (con un toque de reverb)
+    sfxG = ac.createGain(); sfxG.connect(master);
+    const send = ac.createGain(); send.gain.value = 0.25; sfxG.connect(send); send.connect(conv);
+    // Bus de música con filtro suave que quita toda aspereza
+    musG = ac.createGain();
+    const lp = ac.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 4200;
+    musG.connect(lp); lp.connect(master); lp.connect(conv);
+    // Pad cálido (filtrado y oscuro)
+    padG = ac.createGain();
+    const plp = ac.createBiquadFilter(); plp.type = 'lowpass'; plp.frequency.value = 900;
+    padG.connect(plp); plp.connect(musG);
+    sync();
+  }
+
+  // Nota simple con envolvente suave
+  function tone(bus, t, m, dur, type, vol, atk = 0.005, glide = 0) {
+    const o = ac.createOscillator(), g = ac.createGain();
+    o.type = type; o.frequency.setValueAtTime(hz(m), t);
+    if (glide) o.frequency.exponentialRampToValueAtTime(hz(m + glide), t + dur);
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.linearRampToValueAtTime(vol, t + atk);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(g); g.connect(bus); o.start(t); o.stop(t + dur + 0.05);
+  }
+  // Campanita / caja de música: fundamental + armónicos que se apagan antes
+  function bell(bus, t, m, dur, vol) {
+    const f = hz(m);
+    [[1, 1], [2, 0.35], [4, 0.1]].forEach(([mul, a], i) => {
+      const o = ac.createOscillator(), g = ac.createGain(), d = dur / (1 + i * 1.2);
+      o.type = 'sine'; o.frequency.value = f * mul;
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.linearRampToValueAtTime(vol * a, t + 0.006);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + d);
+      o.connect(g); g.connect(bus); o.start(t); o.stop(t + d + 0.05);
+    });
+  }
+
+  // Ruido filtrado reutilizable para impactos, rocas y caídas; todo se genera localmente.
+  function noiseBurst(t, dur = 0.09, vol = 0.08, cutoff = 1200, filterType = 'lowpass') {
+    if (!ac || !sfxG) return;
+    if (!noiseBuf) {
+      noiseBuf = ac.createBuffer(1, Math.floor(ac.sampleRate * 0.7), ac.sampleRate);
+      const data = noiseBuf.getChannelData(0);
+      for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+    }
+    const src = ac.createBufferSource(), filter = ac.createBiquadFilter(), g = ac.createGain();
+    src.buffer = noiseBuf; filter.type = filterType; filter.frequency.setValueAtTime(cutoff, t); filter.Q.value = 0.85;
+    g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(vol, t + 0.006);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    src.connect(filter); filter.connect(g); g.connect(sfxG); src.start(t); src.stop(t + dur);
+  }
+
+  /* Seis paisajes musicales procedurales: selector persistente, sin archivos externos. */
+  const TRACKS = {
+    calma:     {bpm:0, transpose:0, density:.92, lead:'bell', bass:'triangle', pad:.035, arp:.055},
+    aventura:  {bpm:10, transpose:2, density:1.18, lead:'triangle', bass:'sawtooth', pad:.026, arp:.048},
+    synthwave: {bpm:18, transpose:-3, density:1.12, lead:'sawtooth', bass:'triangle', pad:.022, arp:.043},
+    piano:     {bpm:-8, transpose:5, density:.72, lead:'sine', bass:'sine', pad:.042, arp:.068},
+    lofi:      {bpm:-4, transpose:-5, density:.78, lead:'triangle', bass:'triangle', pad:.045, arp:.035},
+    cristal:   {bpm:4, transpose:9, density:1.26, lead:'bell', bass:'sine', pad:.030, arp:.061}
+  };
+  let selectedTrack = P.musicTrack || 'calma';
+  /* Secuenciador: el ambiente y el tempo se adaptan al modo de juego activo. */
+  function sched() {
+    while (nextT < ac.currentTime + 0.25) {
+      const lv = S.level || 1, t = nextT, j = t + Math.random() * 0.012;
+      const track = TRACKS[selectedTrack] || TRACKS.calma;
+      const profile = scene === 'classic' ? { bpm: 8, transpose: -2 } : { bpm: 0, transpose: 0 };
+      const bpm = Math.max(48, Math.min(132, CONFIG.MUSIC_BPM + track.bpm + (lv - 1) * CONFIG.MUSIC_BPM_PER_LEVEL + profile.bpm));
+      const sd = 60 / bpm / 2, [root, ch] = PROG[bar % 8], base = 60 + root + profile.transpose + track.transpose;
+      // Pad: acorde largo que respira
+      if (step === 0) {
+        ch.forEach(n => tone(padG, t, base + n, sd * 9, 'sine', track.pad, 1.0));
+        tone(padG, t, base - 12, sd * 9, track.bass, track.pad * 1.1, 1.0);
+      }
+      // Bajo y pulso cambian de carácter según la banda sonora elegida.
+      if (step === 0 || step === 4) tone(musG, t, base - 12, sd * 3.6, track.bass, selectedTrack === 'synthwave' ? .095 : .075, 0.03);
+      // Arpegio procedural: campanas cristalinas o pulsos sintetizados.
+      if (Math.random() < Math.min(.99, .08 + track.density * .84)) {
+        const v = [ch[0], ch[2], ch[3], ch[1] + 12], idx = ARP[bar % 3][step];
+        if (track.lead === 'bell') bell(musG, j, base + v[idx], sd * 5, track.arp * (step === 0 ? 1.3 : 1) * (0.85 + Math.random() * .3));
+        else tone(musG, j, base + v[idx], sd * (selectedTrack === 'lofi' ? 2.8 : 2.2), track.lead, track.arp * (step === 0 ? 1.3 : 1), .012, selectedTrack === 'synthwave' ? 2 : 0);
+      }
+      // Melodía: en los bucles impares, y siempre desde el nivel 3
+      if ((Math.floor(bar / 8) % 2 === 1 || lv >= 3) && Math.random() < Math.min(1, track.density))
+        MEL[bar % 8].forEach(([s, m, d]) => { if (s === step) { const note = m + track.transpose; if (track.lead === 'bell' || selectedTrack === 'cristal') bell(musG, t, note, sd * d + .45, selectedTrack === 'cristal' ? .075 : .065); else tone(musG, t, note, sd * Math.min(d,3), track.lead, .045, .025); } });
+      // Destello agudo desde el nivel 5
+      if (lv >= 5 && step === 0) bell(musG, t + sd, base + ch[1] + 24, 2, 0.03);
+      // El modo clásico conserva un pulso rítmico discreto.
+      if (scene === 'classic' && step === 4) noiseBurst(t + sd * 0.2, 0.035, 0.012, 900, 'lowpass');
+      nextT += sd; step = (step + 1) % 8; if (!step) bar++;
+    }
+  }
+
+  function sync() {
+    if (!ac) return;
+    const mv = P.music ? CONFIG.MUSIC_VOL * P.mv : 0, sv = P.sfx ? CONFIG.SFX_VOL * P.sv : 0, n = ac.currentTime;
+    musG.gain.setTargetAtTime(mv, n, 0.08); sfxG.gain.setTargetAtTime(sv, n, 0.05);
+    wetG.gain.setTargetAtTime(CONFIG.MUSIC_REVERB, n, 0.1);
+    if (mv > 0 && !tmr) { nextT = n + 0.1; step = 0; tmr = setInterval(sched, 60); }
+    if (mv <= 0 && tmr) { clearInterval(tmr); tmr = 0; }
+  }
+  // Los navegadores exigen un toque antes de reproducir audio
+  addEventListener('pointerdown', () => { init(); if (ac && ac.state !== 'running') ac.resume(); }, true);
+  document.addEventListener('visibilitychange', () => { if (ac) document.hidden ? ac.suspend() : ac.resume(); });
+
+  /* Efectos: todos con campanitas suaves, nada áspero */
+  const run = f => (...a) => { if (ac && P.sfx && ac.state === 'running') f(ac.currentTime, ...a); };
+  const seq = (t, notes, gap, vol, dur) => notes.forEach((m, i) => bell(sfxG, t + i * gap, m, dur, vol));
+  const sfx = {
+    pick:  run(t => tone(sfxG, t, 79, 0.08, 'sine', 0.14)),
+    place: run(t => { tone(sfxG, t, 55, 0.14, 'sine', 0.35, 0.003, -7); tone(sfxG, t, 67, 0.09, 'sine', 0.1); }),
+    bad:   run(t => tone(sfxG, t, 55, 0.24, 'sine', 0.2, 0.005, -3)),
+    clear: run((t, lines, streak) => {
+      const n = Math.min(10, 3 + lines * 2 + streak);
+      for (let i = 0; i < n; i++) bell(sfxG, t + i * 0.07, 72 + PENTA[i % 5] + 12 * Math.floor(i / 5), 0.9, 0.17);
+      bell(sfxG, t + n * 0.07, 96, 1.4, 0.08);
+    }),
+    levelup: run((t, d = 0) => seq(t + d, [72, 76, 79, 84], 0.12, 0.16, 1.2)),
+    over:  run(t => seq(t, [76, 72, 69, 64], 0.28, 0.16, 1.6)),
+    revive: run(t => seq(t, [60, 64, 67, 72, 76, 79], 0.09, 0.15, 1.1)),
+    click: run(t => tone(sfxG, t, 84, 0.06, 'sine', 0.12)),
+    perfect: run((t, d = 0) => seq(t + d, [72, 76, 79, 84, 88, 91, 96], 0.1, 0.17, 1.8)),
+    coin: run(t => { bell(sfxG, t, 88, 0.45, 0.13); bell(sfxG, t + 0.08, 95, 0.7, 0.13); }),
+    tick:  run(t => tone(sfxG, t, 88, 0.06, 'sine', 0.14)),
+    tool:  run(t => seq(t, [76, 83], 0.07, 0.14, 0.6)),
+    bomb:  run(t => { noiseBurst(t, 0.22, 0.16, 420, 'lowpass'); tone(sfxG, t, 50, 0.4, 'sine', 0.32, 0.003, -14); tone(sfxG, t, 38, 0.5, 'triangle', 0.22, 0.003, -10); seq(t + 0.12, [84, 88], 0.08, 0.09, 0.8); }),
+    // Interfaz y modos generales
+    hover: run(t => tone(sfxG, t, 91, 0.035, 'sine', 0.045)),
+    open: run(t => seq(t, [72, 79], 0.055, 0.07, 0.3)),
+    modeStart: run(t => seq(t, scene === 'classic' ? [60, 67, 72] : [67, 72, 76], 0.075, 0.095, 0.55)),
+    unlock: run(t => seq(t, [72, 76, 83, 88, 95], 0.085, 0.11, 0.7)),
+    theme: run(t => seq(t, [79, 84, 88, 91], 0.06, 0.075, 0.42)),
+    achievement: run(t => seq(t, [72, 79, 84, 88, 96], 0.10, 0.12, 1.0)),
+    chest: run(t => { bell(sfxG, t, 55, 0.3, 0.08); seq(t + 0.07, [72, 79, 84, 91], 0.075, 0.10, 0.7); }),
+    // Modo de bloques/puzle: más peso al colocar, barajar, girar y usar herramientas.
+    shuffle: run(t => { seq(t, [84, 79, 76, 84], 0.055, 0.07, 0.24); noiseBurst(t, 0.11, 0.035, 1600, 'highpass'); }),
+    rotate: run(t => { tone(sfxG, t, 68, 0.08, 'triangle', 0.08, 0.003, 8); tone(sfxG, t + 0.035, 79, 0.08, 'sine', 0.055); }),
+    hardDrop: run(t => { noiseBurst(t, 0.13, 0.085, 700, 'lowpass'); tone(sfxG, t, 42, 0.22, 'triangle', 0.18, 0.003, -9); }),
+    classicLock: run(t => { tone(sfxG, t, 52, 0.11, 'triangle', 0.16, 0.003, -3); tone(sfxG, t + 0.025, 64, 0.07, 'sine', 0.07); }),
+    classicSpawn: run(t => tone(sfxG, t, 76, 0.065, 'sine', 0.045)),
+    classicMove: run((t, dx = 1) => tone(sfxG, t, dx < 0 ? 66 : 71, 0.032, 'sine', 0.025)),
+    classicHold: run(t => seq(t, [69, 76, 81], 0.04, 0.06, 0.24)),
+    classicClear: run((t, rows, combo = 1) => {
+      const notes = rows >= 4 ? [55, 67, 79, 88, 96] : rows === 3 ? [64, 72, 81, 88] : rows === 2 ? [67, 76, 84] : [72, 79, 84];
+      seq(t, notes, rows >= 3 ? 0.065 : 0.085, Math.min(0.12, 0.065 + rows * 0.012), rows >= 4 ? 1.05 : 0.72);
+      if (combo > 1) bell(sfxG, t + 0.23, Math.min(100, 86 + combo), 0.52, 0.055);
+      if (rows >= 4) noiseBurst(t, 0.10, 0.04, 1800, 'highpass');
+    }),
+    classicOver: run(t => { noiseBurst(t, 0.18, 0.035, 580, 'lowpass'); seq(t + 0.04, [64, 60, 55, 48], 0.16, 0.105, 0.8); }),
+    gemLevelStart: run((t, level = 1) => seq(t, level <= 3 ? [67, 74, 79] : [64, 72, 79, 84], 0.07, 0.07, 0.48)),
+    gemSelect: run(t => { tone(sfxG, t, 90, 0.055, 'sine', 0.07); bell(sfxG, t + 0.012, 96, 0.16, 0.045); }),
+    gemSwap: run(t => { tone(sfxG, t, 62, 0.09, 'triangle', 0.055, 0.004, 7); tone(sfxG, t + 0.025, 82, 0.11, 'sine', 0.055, 0.004, 5); }),
+    gemInvalid: run(t => { tone(sfxG, t, 62, 0.09, 'sine', 0.08, 0.004, -5); tone(sfxG, t + 0.07, 55, 0.12, 'triangle', 0.055, 0.004, -3); }),
+    gemMatch: run((t, size = 3) => {
+      const n = Math.max(3, Math.min(9, Math.round(size)));
+      for (let i = 0; i < Math.min(5, 2 + Math.floor(n / 2)); i++) bell(sfxG, t + i * 0.035, 72 + PENTA[(i + n) % 5] + (n >= 5 ? 12 : 0), 0.28 + Math.min(0.16, n * 0.012), 0.055 + Math.min(0.025, n * 0.002));
+      if (n >= 5) bell(sfxG, t + 0.18, 91, 0.48, 0.055);
+    }),
+    gemCascade: run((t, chain = 2) => {
+      const n = Math.max(2, Math.min(7, Math.round(chain)));
+      seq(t, Array.from({length: Math.min(5,n)}, (_,i) => 76 + PENTA[(i+n)%5] + i*2), 0.045, 0.075, 0.42);
+      if (n >= 4) bell(sfxG, t + 0.24, 98, 0.55, 0.065);
+    }),
+    gemPower: run((t, kind = 'bomb') => {
+      if (kind === 'rainbow') { seq(t, [72, 79, 84, 91, 96, 103], 0.045, 0.075, 0.55); noiseBurst(t, 0.1, 0.025, 3000, 'highpass'); }
+      else if (kind === 'line' || kind === 'row' || kind === 'col') { tone(sfxG, t, 56, 0.2, 'sawtooth', 0.075, 0.002, 18); seq(t + 0.04, [78, 86], 0.04, 0.065, 0.32); }
+      else if (kind === 'cross' || kind === 'mega') { noiseBurst(t, 0.2, 0.1, 650, 'lowpass'); tone(sfxG, t, 42, 0.32, 'sine', 0.22, 0.003, -16); seq(t + 0.1, [84, 91, 96, 103], 0.055, 0.09, 0.65); }
+      else if (kind === 'hammer') { noiseBurst(t, 0.08, 0.09, 850, 'lowpass'); tone(sfxG, t, 48, 0.13, 'triangle', 0.17, 0.002, -12); }
+      else { noiseBurst(t, 0.16, 0.085, 560, 'lowpass'); tone(sfxG, t, 48, 0.26, 'sine', 0.21, 0.003, -12); seq(t + 0.08, [79, 84, 88], 0.045, 0.06, 0.38); }
+    }),
+    gemPowerCreated: run((t, kind = 'row') => seq(t, kind === 'rainbow' ? [84, 91, 96, 103] : kind === 'bomb' ? [67, 76, 84] : [76, 84, 88], 0.055, 0.07, 0.45)),
+    gemRockHit: run((t, count = 1) => { noiseBurst(t, 0.085, 0.07, 850, 'lowpass'); tone(sfxG, t, 47, 0.12, 'triangle', 0.11, 0.003, -5); if (count > 2) tone(sfxG, t + 0.025, 53, 0.08, 'sine', 0.045); }),
+    gemRockBreak: run((t, count = 1) => { noiseBurst(t, 0.13, 0.065, 1900, 'highpass'); tone(sfxG, t, 52, 0.22, 'triangle', 0.13, 0.002, -8); seq(t + 0.045, [72, 79, 84], 0.045, 0.055, 0.38); if (count > 1) bell(sfxG, t + 0.18, 91, 0.5, 0.045); }),
+    gemGoal: run(t => seq(t, [72, 79, 84, 91], 0.07, 0.085, 0.68)),
+    gemPhase: run((t, phase = 2) => { seq(t, [67, 74, 79, 86, 91], 0.06, 0.08, 0.6); if (phase >= 3) bell(sfxG, t + 0.33, 98, 0.55, 0.06); }),
+    gemWin: run((t, stars = 3) => seq(t, stars >= 3 ? [72, 76, 79, 84, 88, 91, 96] : stars === 2 ? [72, 76, 79, 84, 88] : [72, 76, 79, 84], 0.09, 0.12, 1.05)),
+    gemFail: run(t => { tone(sfxG, t, 60, 0.28, 'sine', 0.11, 0.006, -3); seq(t + 0.06, [67, 62, 55], 0.14, 0.07, 0.6); }),
+    gemTick: run((t, urgency = 1) => tone(sfxG, t, urgency >= 3 ? 94 : 84, 0.045, 'sine', urgency >= 3 ? 0.085 : 0.045)),
+  };
+  function setMode(name) {
+    scene = ['gems','classic','puzzle'].includes(name) ? name : 'puzzle';
+    if (ac && ac.state !== 'running') ac.resume();
+  }
+  function setTrack(name) { selectedTrack = TRACKS[name] ? name : 'calma'; if (ac && ac.state === 'running') { nextT = ac.currentTime + .08; step = 0; bar = 0; } }
+  function previewMusic() { init(); if (ac && ac.state !== 'running') ac.resume(); setTrack(P.musicTrack); sync(); }
+  return { sync, sfx, setMode, setTrack, previewMusic };
+})();
+const sfx = snd.sfx;
+// API compartida por los módulos activos del juego.
+window.RaddykallAudio = {
+  play(name, ...args) { if (sfx[name]) { try { sfx[name](...args); } catch (_) {} } },
+  setMode(name) { snd.setMode(name); },
+  sync() { snd.sync(); },
+  setTrack(name) { snd.setTrack(name); },
+  previewMusic() { snd.previewMusic(); }
+};
+const vibe = p => { if (P.vibe && navigator.vibrate) try { navigator.vibrate(p); } catch (e) {} };
+
+/* =====================================================================
+   6. MONETIZACIÓN · puente opcional con SDK nativo, sin anuncios simulados
+   Contrato esperado en la app Android contenedora:
+   window.RaddykallNativeAds.showInterstitial(onDismiss)
+   window.RaddykallNativeAds.showRewarded(label, onReward, onDismiss)
+   Sin ese puente, se omiten intersticiales y no se consumen recursos por
+   recompensas de anuncio; el HTML no finge que AdMob ya está integrado.
+   ===================================================================== */
+const Ads = {
+  hasRewarded() { return typeof window.RaddykallNativeAds?.showRewarded === 'function'; },
+  hasInterstitial() { return typeof window.RaddykallNativeAds?.showInterstitial === 'function'; },
+  banner() {
+    // Los banners deben ser dibujados por el SDK nativo, no por un falso placeholder HTML.
+    ['banner', 'tbanner'].forEach(id => {
+      const b = $(id);
+      if (b) { b.classList.add('hidden'); b.setAttribute('aria-hidden', 'true'); b.style.height = '0'; }
+    });
+    const bridge = window.RaddykallNativeAds;
+    try { bridge?.setBannerVisible?.(!!CONFIG.SHOW_BANNER, CONFIG.BANNER_HEIGHT); } catch (_) {}
+  },
+  interstitial(done) {
+    const bridge = window.RaddykallNativeAds;
+    if (typeof bridge?.showInterstitial !== 'function') { done?.(); return; }
+    let settled = false;
+    const finish = () => { if (settled) return; settled = true; done?.(); };
+    try {
+      const result = bridge.showInterstitial(finish);
+      if (result && typeof result.then === 'function') result.then(finish).catch(finish);
+    } catch (_) { finish(); }
+  },
+  rewarded(ok, cancel, label = 'RECOMPENSA') {
+    const bridge = window.RaddykallNativeAds;
+    if (typeof bridge?.showRewarded !== 'function') {
+      toast('Los anuncios todavía no están conectados. No se ha consumido ningún recurso.');
+      cancel?.();
+      return;
+    }
+    let settled = false;
+    const finish = earned => {
+      if (settled) return; settled = true;
+      if (earned) ok?.(); else cancel?.();
+    };
+    try {
+      const result = bridge.showRewarded(label, () => finish(true), () => finish(false));
+      if (result && typeof result.then === 'function') result.then(v => finish(v === true || v?.rewarded === true)).catch(() => finish(false));
+    } catch (_) {
+      toast('No se pudo cargar el anuncio. No se ha consumido ningún recurso.');
+      finish(false);
+    }
+  },
+  hide() { /* Los anuncios nativos no bloquean ni alteran la capa HTML. */ }
+};
+const applyCfg = () => { Ads.banner(); document.body.classList.toggle('noamb', !CONFIG.AMBIENT_FX || !G.ambient); };
+
+/* =====================================================================
+   7. FLUJO DE PARTIDA + PANTALLAS (menú, game over)
+   ===================================================================== */
+/* ---------- Recursos: logo (PNG recortado → WebP incrustado) e iconos SVG ---------- */
+const LOGO = 'assets/kenney/kenney-ui-11.png';
+const PATHS = {
+  music: '<path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/>',
+  sfx: '<path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="M16.5 9a4 4 0 010 6M19 6.5a8 8 0 010 11"/>',
+  vibe: '<rect x="8" y="3" width="8" height="18" rx="2"/><path d="M4 8v8M20 8v8"/>',
+  timer: '<circle cx="12" cy="13" r="8"/><path d="M12 9v4l3 2M9 2h6"/>',
+  skins: '<path d="M12 3a9 9 0 100 18c1.4 0 2-1 2-2 0-1.2-1-1.6-1-2.6 0-1 .8-1.7 1.8-1.7H17a4 4 0 004-4c0-4.4-4-7.7-9-7.7z"/><circle cx="7.5" cy="11" r="1.2"/><circle cx="10" cy="7" r="1.2"/><circle cx="15" cy="7.2" r="1.2"/>',
+  help: '<circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 114 2c-1 .8-1.5 1.2-1.5 2.5M12 17h.01"/>',
+  undo: '<path d="M3 2v6h6"/><path d="M3.5 13a9 9 0 103-7.7L3 8"/>',
+  shuffle: '<path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/>',
+  bomb: '<circle cx="11" cy="14" r="7"/><path d="M16 9l3-3M19 3v2M22 6h-2"/>',
+  gfx: '<path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/><path d="M19 3v4M17 5h4M5 17v4M3 19h4"/>',
+  rotate: '<rect x="3.5" y="11.5" width="9" height="9" rx="2"/><path d="M13 5h4a3 3 0 013 3v2.5M17.5 8l2.5 2.5L22.5 8"/>',
+};
+PATHS.bag = '<path d="M5 8h14l-1 12H6L5 8z"/><path d="M9 8V6a3 3 0 016 0v2"/>';
+PATHS.trophy = '<path d="M8 4h8v5a4 4 0 01-8 0V4z"/><path d="M8 6H5.5A2.5 2.5 0 008 10M16 6h2.5A2.5 2.5 0 0116 10M12 13v4M9 20h6M10 17h4"/>';
+PATHS.user = '<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0116 0"/>';
+PATHS.gear = '<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9L7 7M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/>';
+PATHS.gift = '<rect x="4" y="9" width="16" height="11" rx="2"/><path d="M12 9v11M4 13.5h16M12 9C10 4 6 5 7 8c.5 1.4 3 1.2 5 1zm0 0c2-5 6-4 5-1-.5 1.4-3 1.2-5 1z"/>';
+PATHS.target = '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.2"/>';
+PATHS.chest = '<path d="M4 11h16v8a1 1 0 01-1 1H5a1 1 0 01-1-1v-8z"/><path d="M4 11a8 5 0 0116 0M12 13.5v3"/>';
+/* Raddykall UI icon refresh — selected Lucide SVG paths, embedded locally.
+   No CDN/runtime dependency: icons remain available offline in the Android app.
+   Source: https://github.com/lucide-icons/lucide (see docs/THIRD-PARTY-NOTICES.md). */
+Object.assign(PATHS, {
+  music: '<path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>',
+  sfx: '<path d="M11 5 6 9H3v6h3l5 4z"/><path d="M15.54 8.46a5 5 0 010 7.07"/><path d="M19.07 4.93a10 10 0 010 14.14"/>',
+  vibe: '<rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/><path d="m2 8 2 2-2 2M22 8l-2 2 2 2"/>',
+  timer: '<circle cx="12" cy="13" r="8"/><path d="M12 9v4l3 2"/><path d="M9 2h6M12 2v3"/>',
+  skins: '<path d="M12 3a9 9 0 1 0 0 18h1.2a2 2 0 0 0 1.4-3.4 1.7 1.7 0 0 1 1.2-2.9H17a4 4 0 0 0 4-4c0-4.4-4-7.7-9-7.7Z"/><circle cx="7.5" cy="10.5" r=".8"/><circle cx="10" cy="7.5" r=".8"/><circle cx="15" cy="7.5" r=".8"/>',
+  help: '<circle cx="12" cy="12" r="10"/><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3"/><path d="M12 17h.01"/>',
+  undo: '<path d="M3 7v6h6"/><path d="M5.6 18a9 9 0 1 0-.6-9.5L3 13"/>',
+  shuffle: '<path d="m18 14 4 4-4 4"/><path d="M18 2l4 4-4 4"/><path d="M2 18h2.5a5 5 0 0 0 4-2l7-8a5 5 0 0 1 4-2H22"/><path d="M2 6h2.5a5 5 0 0 1 4 2l1.2 1.4"/><path d="m14.3 14.3.7.8a5 5 0 0 0 4 2H22"/>',
+  bomb: '<circle cx="11" cy="13" r="8"/><path d="m16.5 7.5 2-2"/><path d="M19 3v3h3"/><path d="m8 11 2 2-1 2"/>',
+  gfx: '<path d="m12 3 1.9 5.8L20 11l-6.1 2.2L12 19l-1.9-5.8L4 11l6.1-2.2L12 3Z"/><path d="M19 14v5M16.5 16.5h5"/><path d="M5 2v4M3 4h4"/>',
+  rotate: '<path d="M21 2v6h-6"/><path d="M3 12a9 9 0 0 1 15.4-6.4L21 8"/><path d="M3 22v-6h6"/><path d="M21 12a9 9 0 0 1-15.4 6.4L3 16"/>',
+  bag: '<path d="M6 7h12l1 14H5L6 7Z"/><path d="M9 7V5a3 3 0 0 1 6 0v2"/>',
+  trophy: '<path d="M8 21h8M12 17v4"/><path d="M7 4h10v5a5 5 0 0 1-10 0V4Z"/><path d="M7 6H4v2a4 4 0 0 0 4 4M17 6h3v2a4 4 0 0 1-4 4"/>',
+  user: '<circle cx="12" cy="8" r="4"/><path d="M5 21v-2a7 7 0 0 1 14 0v2"/>',
+  gear: '<path d="M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8Z"/><path d="m19.4 15 .1.1 1.4 1.1-1.4 2.4-1.7-.6a8 8 0 0 1-1.8 1l-.3 1.8h-2.8l-.3-1.8a8 8 0 0 1-1.8-1l-1.7.6-1.4-2.4 1.4-1.1a7 7 0 0 1 0-2l-1.4-1.1 1.4-2.4 1.7.6a8 8 0 0 1 1.8-1l.3-1.8h2.8l.3 1.8a8 8 0 0 1 1.8 1l1.7-.6 1.4 2.4-1.4 1.1a7 7 0 0 1 0 2Z" transform="translate(-1 -1) scale(1.08)"/>',
+  gift: '<rect x="3" y="8" width="18" height="13" rx="2"/><path d="M12 8v13M3 12h18"/><path d="M12 8H7.5a2.5 2.5 0 1 1 2.5-2c0 1.2 2 2 2 2ZM12 8h4.5a2.5 2.5 0 1 0-2.5-2c0 1.2-2 2-2 2Z"/>',
+  target: '<circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>',
+  chest: '<path d="M3 10h18v10H3z"/><path d="M3 10a9 5 0 0 1 18 0"/><path d="M12 13v3"/>'
+});
+const ICON = Object.fromEntries(Object.entries(PATHS).map(([k, d]) => [k, `<svg class="ic" viewBox="0 0 24 24" aria-hidden="true">${d}</svg>`]));
+const casualAsset = (path, cls = 'ic', size = '64x64') => `<img class="${cls} rk-casual-asset" src="assets/casual-mobile-ui/PNG/${size}/${path}.png" alt="" aria-hidden="true" draggable="false" decoding="async">`;
+ICON.coin = casualAsset('coins/coin_gold','ic-coin','64x64');
+Object.assign(ICON, {
+  bomb: casualAsset('icons/bomb'),
+  bag: casualAsset('icons/btn_shop'),
+  gift: casualAsset('icons/btn_gift'),
+  gear: casualAsset('icons/btn_gear'),
+  trophy: casualAsset('badges/trophy'),
+  target: casualAsset('icons/ticket'),
+  chest: casualAsset('icons/chest')
+});
+
+/* Ilustraciones SVG propias de la pantalla principal: volumen sin emojis ni dependencias. */
+const HOME_ICONS = {
+  gift: `<svg class="home-art home-gift-art" viewBox="0 0 72 72" aria-hidden="true">
+    <defs>
+      <linearGradient id="v20GiftFront" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#fff08a"/><stop offset=".38" stop-color="#ffc536"/><stop offset=".78" stop-color="#ff9e1b"/><stop offset="1" stop-color="#d9630a"/></linearGradient>
+      <linearGradient id="v20GiftSide" x1="0" y1="0" x2="1" y2="0"><stop stop-color="#e8740d"/><stop offset="1" stop-color="#ad4509"/></linearGradient>
+      <linearGradient id="v20GiftTop" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#fff8a6"/><stop offset="1" stop-color="#ffb629"/></linearGradient>
+      <linearGradient id="v20GiftRibbon" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#fffbe0"/><stop offset=".48" stop-color="#ffcf4d"/><stop offset="1" stop-color="#ed7440"/></linearGradient>
+      <linearGradient id="v20GiftBow" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#fff8b3"/><stop offset=".5" stop-color="#ffda57"/><stop offset="1" stop-color="#ff9821"/></linearGradient>
+    </defs>
+    <ellipse cx="37" cy="63" rx="23" ry="4.5" fill="#050b2d" opacity=".38"/>
+    <path d="M14 29h43v27q0 4-4 4H18q-4 0-4-4Z" fill="url(#v20GiftFront)" stroke="#ffe9a0" stroke-width="1.8" stroke-linejoin="round"/>
+    <path d="M57 29 64 25v28q0 3-4 4l-3 3Z" fill="url(#v20GiftSide)" stroke="#c96715" stroke-width="1.4" stroke-linejoin="round"/>
+    <path d="M14 29 21 25h43l-7 4Z" fill="#fff08b" stroke="#ffe6a1" stroke-width="1.2" stroke-linejoin="round"/>
+    <path d="M31 27h10v33H31Z" fill="url(#v20GiftRibbon)" stroke="#fff1a5" stroke-opacity=".72" stroke-width="1"/>
+    <path d="M33 31h3v25h-3Z" fill="#fffbe0" opacity=".62"/>
+    <path d="M10 20 13 15Q18 10 26 16l10 10q-12 3-21-1-5-1-5-5Z" fill="url(#v20GiftBow)" stroke="#c87917" stroke-width="1.7" stroke-linejoin="round"/>
+    <path d="M62 20 59 15Q54 10 46 16L36 26q12 3 21-1 5-1 5-5Z" fill="url(#v20GiftBow)" stroke="#c87917" stroke-width="1.7" stroke-linejoin="round"/>
+    <path d="M12 18q5-5 10-2l8 8q-8 1-14-1-4-1-4-5Z" fill="#fff7b2" opacity=".85"/>
+    <path d="M60 18q-5-5-10-2l-8 8q8 1 14-1 4-1 4-5Z" fill="#fff7b2" opacity=".72"/>
+    <path d="M36 24c-2-7-9-13-14-10-5 3 1 11 14 13 13-2 19-10 14-13-5-3-12 3-14 10Z" fill="url(#v20GiftRibbon)" stroke="#d98b1b" stroke-width="1.6" stroke-linejoin="round"/>
+    <path d="M36 26v33" stroke="#fffce1" stroke-width="1.6" opacity=".8"/>
+    <path d="M15 34v19M19 34v18" stroke="#fff9bd" stroke-width="1.4" opacity=".4" stroke-linecap="round"/>
+    <path d="M10 28h52" stroke="#fff6ad" stroke-width="1.5" stroke-linecap="round" opacity=".92"/>
+    <path d="m9 8 1.6 3.7 3.7 1.6-3.7 1.6L9 20l-1.6-5.1-3.7-1.6 3.7-1.6Z" fill="#fff8be" opacity=".96"/>
+    <path d="m63 10 1.2 2.8 2.8 1.2-2.8 1.2-1.2 2.8-1.2-2.8-2.8-1.2 2.8-1.2Z" fill="#fff" opacity=".9"/>
+  </svg>`,
+  coin: `<svg class="home-art home-coin-art" viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="v19coinGold" x1="0" y1="0" x2=".9" y2="1"><stop stop-color="#fff58c"/><stop offset=".35" stop-color="#ffc933"/><stop offset=".72" stop-color="#ff9d16"/><stop offset="1" stop-color="#d96908"/></linearGradient><linearGradient id="v19coinEdge" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#fff4a6"/><stop offset="1" stop-color="#d9820a"/></linearGradient></defs><ellipse cx="33" cy="56" rx="22" ry="4" fill="#050d35" opacity=".3"/><circle cx="32" cy="31" r="26" fill="#a95605"/><circle cx="31" cy="28" r="26" fill="url(#v19coinEdge)" stroke="#fff0a0" stroke-width="2"/><circle cx="31" cy="27" r="21.5" fill="url(#v19coinGold)" stroke="#f7b02a" stroke-width="2"/><circle cx="31" cy="27" r="17.5" fill="none" stroke="#fff2a2" stroke-width="1.8" opacity=".9"/><path d="m31 13 4.2 8.5 9.3 1.3-6.7 6.6 1.6 9.2-8.4-4.4-8.4 4.4 1.6-9.2-6.7-6.6 9.3-1.3Z" fill="#fff19b" stroke="#d88a09" stroke-width="1.4"/><path d="M16 15q6-7 14-7" fill="none" stroke="#fff" stroke-width="2.3" stroke-linecap="round" opacity=".7"/></svg>`,
+  lv: `<svg class="home-art" viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="v19cupGold" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#fff58c"/><stop offset=".5" stop-color="#ffc12f"/><stop offset="1" stop-color="#e77a0a"/></linearGradient></defs><ellipse cx="32" cy="58" rx="21" ry="3" fill="#043c32" opacity=".28"/><path d="M17 12h30v13c0 12-7 19-15 19s-15-7-15-19Z" fill="url(#v19cupGold)" stroke="#fff2a2" stroke-width="2"/><path d="M17 17H9c-1 10 5 16 13 16M47 17h8c1 10-5 16-13 16" fill="none" stroke="#ffdf55" stroke-width="6" stroke-linecap="round"/><path d="M17 17H9c-1 10 5 16 13 16M47 17h8c1 10-5 16-13 16" fill="none" stroke="#b96b0a" stroke-width="1.8" stroke-linecap="round"/><path d="M29 43h6v7h-6z" fill="#ffc63c"/><path d="M23 49h18v5H23z" fill="#fca91d" stroke="#fff0a0" stroke-width="1.5"/><path d="M22 14h19" stroke="#fffad0" stroke-width="2" stroke-linecap="round" opacity=".85"/><path d="m32 17 2.5 5.1 5.7.8-4.1 4 .9 5.7-5-2.7-5 2.7.9-5.7-4.1-4 5.7-.8Z" fill="#fff8c2" opacity=".9"/></svg>`,
+  inf: `<svg class="home-art" viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="v19infinity" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#f5c8ff"/><stop offset=".38" stop-color="#bd72ff"/><stop offset=".72" stop-color="#7a45ee"/><stop offset="1" stop-color="#3b35be"/></linearGradient></defs><path d="M10 32c0-13 16-17 23-4l-2 3 2 3C25 47 10 44 10 32Zm44 0C54 19 38 15 31 28l2 3-2 3c8 13 23 10 23-2Z" fill="none" stroke="#312073" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/><path d="M10 32c0-13 16-17 23-4l-2 3 2 3C25 47 10 44 10 32Zm44 0C54 19 38 15 31 28l2 3-2 3c8 13 23 10 23-2Z" fill="none" stroke="url(#v19infinity)" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/><path d="M14 27c2-4 7-5 10-3M50 27c-2-4-7-5-10-3" fill="none" stroke="#fff0ff" stroke-width="2.2" stroke-linecap="round" opacity=".95"/></svg>`,
+  tet: `<svg class="home-art" viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="v19cubeTop" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#fff0a0"/><stop offset="1" stop-color="#ff9d32"/></linearGradient><linearGradient id="v19cubeLeft" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#ffb64c"/><stop offset="1" stop-color="#e66c20"/></linearGradient><linearGradient id="v19cubeRight" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#f38a24"/><stop offset="1" stop-color="#bc451b"/></linearGradient></defs><g stroke="#ffe0a1" stroke-width="1.2" stroke-linejoin="round"><g transform="translate(7 28)"><path d="M0 10 14 2 28 10 14 19Z" fill="url(#v19cubeTop)"/><path d="M0 10 14 19v18L0 28Z" fill="url(#v19cubeLeft)"/><path d="M14 19 28 10v18L14 37Z" fill="url(#v19cubeRight)"/></g><g transform="translate(28 5) scale(.83)"><path d="M0 10 14 2 28 10 14 19Z" fill="url(#v19cubeTop)"/><path d="M0 10 14 19v18L0 28Z" fill="url(#v19cubeLeft)"/><path d="M14 19 28 10v18L14 37Z" fill="url(#v19cubeRight)"/></g><g transform="translate(31 34) scale(.72)"><path d="M0 10 14 2 28 10 14 19Z" fill="url(#v19cubeTop)"/><path d="M0 10 14 19v18L0 28Z" fill="url(#v19cubeLeft)"/><path d="M14 19 28 10v18L14 37Z" fill="url(#v19cubeRight)"/></g></g></svg>`,
+  gems: `<svg class="home-art" viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="v19gemOuter" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#a4ffff"/><stop offset=".4" stop-color="#49d5ff"/><stop offset=".7" stop-color="#6773ff"/><stop offset="1" stop-color="#e28cff"/></linearGradient></defs><path d="M18 7h28l14 17-28 34L2 24Z" fill="#202b83" opacity=".6" transform="translate(0 3)"/><path d="M18 6h28l14 17-28 34L2 23Z" fill="url(#v19gemOuter)" stroke="#e1ffff" stroke-width="1.8" stroke-linejoin="round"/><path d="M18 6 26 23 2 23ZM18 6h28L38 23H26Z" fill="#e7ffff" opacity=".8"/><path d="m46 6 14 17H38Z" fill="#53dcff"/><path d="M2 23h24L32 57Z" fill="#3b9bff"/><path d="m26 23 12 0-6 34Z" fill="#e0f7ff" opacity=".88"/><path d="M38 23h22L32 57Z" fill="#8063ec"/><path d="m18 6 8 17m12 0 8-17M26 23l6 34m6-34-6 34" stroke="#fff" stroke-width="1.1" opacity=".74"/></svg>`,
+  go: `<svg class="home-art" viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="v19play" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#fff58b"/><stop offset="1" stop-color="#ff7b24"/></linearGradient></defs><circle cx="32" cy="32" r="26" fill="#b95516" opacity=".7" transform="translate(0 3)"/><circle cx="32" cy="30" r="25" fill="url(#v19play)" stroke="#fff1a3" stroke-width="2"/><path d="M26 17 46 30 26 43Z" fill="#fff" stroke="#e8780d" stroke-width="1.4" stroke-linejoin="round"/><path d="M25 18 25 41" stroke="#fff" stroke-width="2" stroke-linecap="round" opacity=".8"/></svg>`,
+  missions: `<svg class="home-art nav-art target-art" viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="19" fill="#133d76" stroke="#46ebff" stroke-width="4"/><circle cx="24" cy="24" r="12" fill="#20c6f6" stroke="#94f8ff" stroke-width="2"/><circle cx="24" cy="24" r="6" fill="#164fa0" stroke="#d3ffff" stroke-width="2"/><circle cx="24" cy="24" r="2.5" fill="#ffdf55"/><path d="M24 2v8M24 38v8M2 24h8M38 24h8" stroke="#49efff" stroke-width="3" stroke-linecap="round"/></svg>`,
+  store: `<svg class="home-art nav-art store-art" viewBox="0 0 48 48" aria-hidden="true"><defs><linearGradient id="v19bag" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#62ffd1"/><stop offset="1" stop-color="#00a987"/></linearGradient></defs><path d="M9 17h30l-2 25H11Z" fill="#075d78" opacity=".6" transform="translate(0 2)"/><path d="M9 16h30l-2 25H11Z" fill="url(#v19bag)" stroke="#8affdf" stroke-width="2" stroke-linejoin="round"/><path d="M16 17v-5a8 8 0 0 1 16 0v5" fill="none" stroke="#08d5a6" stroke-width="6" stroke-linecap="round"/><path d="M16 17v-5a8 8 0 0 1 16 0v5" fill="none" stroke="#a1ffe7" stroke-width="2.5" stroke-linecap="round"/><path d="M14 23v12" stroke="#d0fff2" stroke-width="2" stroke-linecap="round" opacity=".85"/></svg>`,
+  trophy: `<svg class="home-art nav-art trophy-art" viewBox="0 0 48 48" aria-hidden="true"><defs><linearGradient id="v19trophy" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#fff58a"/><stop offset=".45" stop-color="#ffc02e"/><stop offset="1" stop-color="#ec7d05"/></linearGradient></defs><path d="M14 6h20v12c0 8-5 13-10 13s-10-5-10-13Z" fill="url(#v19trophy)" stroke="#fff1a0" stroke-width="2"/><path d="M14 10H7c0 10 3 15 12 15M34 10h7c0 10-3 15-12 15" fill="none" stroke="#ffca36" stroke-width="5" stroke-linecap="round"/><path d="M24 31v6M17 39h14" stroke="#ffce48" stroke-width="5" stroke-linecap="round"/><path d="M24 10 26.5 15l5.5.8-4 3.8.9 5.4-4.9-2.6-4.9 2.6.9-5.4-4-3.8 5.5-.8Z" fill="#fff4b0"/></svg>`,
+  user: `<svg class="home-art nav-art user-art" viewBox="0 0 48 48" aria-hidden="true"><defs><linearGradient id="v19user" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#d9b6ff"/><stop offset=".45" stop-color="#9962ff"/><stop offset="1" stop-color="#623fe1"/></linearGradient></defs><circle cx="24" cy="14" r="10" fill="url(#v19user)" stroke="#e6d4ff" stroke-width="1.6"/><path d="M6 42c0-10 7-16 18-16s18 6 18 16c0 2-2 3-4 3H10c-2 0-4-1-4-3Z" fill="url(#v19user)" stroke="#d3b3ff" stroke-width="1.8"/><ellipse cx="20" cy="10" rx="3" ry="2" fill="#fff" opacity=".55"/></svg>`,
+  settings: `<svg class="home-art nav-art settings-art" viewBox="0 0 64 64" aria-hidden="true">
+    <defs>
+      <linearGradient id="v20GearBody" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#e9ddff"/><stop offset=".28" stop-color="#c39bff"/><stop offset=".62" stop-color="#8a59f0"/><stop offset="1" stop-color="#5039b8"/></linearGradient>
+      <linearGradient id="v20GearEdge" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#f3e9ff"/><stop offset="1" stop-color="#7550d6"/></linearGradient>
+      <radialGradient id="v20GearCore" cx="30%" cy="22%" r="85%"><stop stop-color="#4e3a88"/><stop offset="1" stop-color="#191841"/></radialGradient>
+    </defs>
+    <ellipse cx="32" cy="59" rx="19" ry="3" fill="#030926" opacity=".32"/>
+    <g class="gear-body" stroke-linejoin="round">
+      <path d="M27 3H37L39 10 44.5 12.2 51 9 59 17 55.8 23 58 28.5 63 30V38L58 39.8 55.8 45 59 51 51 59 44.5 55.8 39 58 37 63H27L25 58 19.5 55.8 13 59 5 51 8.2 45 6 39.8 1 38V30L6 28.5 8.2 23 5 17 13 9 19.5 12.2 25 10Z" transform="translate(0 2)" fill="#2f215f" opacity=".58"/>
+      <path d="M27 3H37L39 10 44.5 12.2 51 9 59 17 55.8 23 58 28.5 63 30V38L58 39.8 55.8 45 59 51 51 59 44.5 55.8 39 58 37 63H27L25 58 19.5 55.8 13 59 5 51 8.2 45 6 39.8 1 38V30L6 28.5 8.2 23 5 17 13 9 19.5 12.2 25 10Z" fill="url(#v20GearBody)" stroke="url(#v20GearEdge)" stroke-width="1.7"/>
+      <path d="M27 6H37L38.7 12 44.5 14.3 50.2 11.4 56.5 17.7 53.5 23.5 55.8 29 60 30.5V37.2L55.2 39 53.5 44.3 56.5 50.1 50.2 56.4 44.5 53.5 38.7 55.8 37 60H27L25.3 55.8 19.5 53.5 13.8 56.4 7.5 50.1 10.5 44.3 8.2 39 4 37.2V30.5L8.8 29 10.5 23.5 7.5 17.7 13.8 11.4 19.5 14.3 25.3 12Z" fill="none" stroke="#fff" stroke-opacity=".19" stroke-width="1.2"/>
+      <circle cx="32" cy="34" r="13.7" fill="url(#v20GearCore)" stroke="#e0ceff" stroke-width="2"/>
+      <circle cx="32" cy="34" r="7.5" fill="#9a78ee" stroke="#f5ecff" stroke-width="1.8"/>
+      <circle cx="29.4" cy="31.3" r="2.2" fill="#fff" opacity=".62"/>
+      <path d="M18 22q4-5 9-5" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" opacity=".76"/>
+    </g>
+    <path d="m51 4 2.4 5.6 5.6 2.4-5.6 2.4L51 20l-2.4-5.6L43 12l5.6-2.4Z" fill="#fff18b" stroke="#fff9ca" stroke-width=".8"/>
+    <path d="m13 12 1.4 3.2 3.2 1.4-3.2 1.4-1.4 3.2-1.4-3.2-3.2-1.4 3.2-1.4Z" fill="#91efff"/>
+  </svg>`
+};
+/* Raddykall v39 — use the integrated Casual Mobile UI Icons where they improve clarity.
+   Source assets are local PNGs; no external network requests or runtime dependency. */
+Object.assign(HOME_ICONS, {
+  gift: casualAsset('icons/btn_gift','home-art home-gift-art','128x128'),
+  coin: casualAsset('coins/coin_gold','home-art home-coin-art','128x128'),
+  lv: casualAsset('badges/medal_gold','home-art','128x128'),
+  inf: casualAsset('icons/rocket','home-art','128x128'),
+  go: casualAsset('icons/btn_play','home-art','128x128'),
+  missions: casualAsset('icons/ticket','home-art nav-art','128x128'),
+  store: casualAsset('icons/btn_shop','home-art nav-art','128x128'),
+  trophy: casualAsset('badges/trophy','home-art nav-art','128x128'),
+  settings: casualAsset('icons/btn_gear','home-art nav-art settings-art','128x128')
+});
+
+const TOGGLES = [['music', 'Música'], ['sfx', 'Efectos'], ['vibe', 'Vibración'], ['timer', 'Tiempo']];
+const dockBtns = () => TOGGLES.map(([k, n]) =>
+  `<button class="dk" data-t="${k}" aria-pressed="${!!P[k]}" aria-label="${n}">${ICON[k]}<small>${n}</small></button>`).join('');
+
+let shown = 0, tw = 0;                       // marcador que "cuenta" hacia arriba
+const $combo = $('combo');
+const LVL = () => S.mode === 'lvl';
+const totalStars = () => Object.values(P.stars || {}).reduce((a, b) => a + b, 0);
+// ¿hay alguna pantalla/menú abierto? (pausa el reloj y bloquea herramientas)
+const blocked = () => ['ov', 'home', 'quick', 'tut', 'panel', 'tetris', 'shop', 'page'].some(id => !$(id).classList.contains('hidden'));
+
+/* ---------- MODO NIVELES: las metas se generan por fórmula (ajustables en CONFIG) ---------- */
+const LEVEL_KINDS = ['score', 'lines', 'score', 'combo', 'lines'];          // ciclo de tipos de meta
+const GOAL_NAME = { score: 'Puntos', lines: 'Líneas', combo: 'Racha' };
+function levelDef(n) {
+  const kind = LEVEL_KINDS[(n - 1) % LEVEL_KINDS.length];
+  const diff = Math.min(CONFIG.MAX_LEVEL, 1 + Math.floor((n - 1) / 3));         // sesgo a piezas grandes
+  const fill = n === 1 ? 0 : Math.min(CONFIG.LEVEL_MAX_FILL, 3 + (n - 2) * 2);  // bloques iniciales
+  let target, moves;
+  if (kind === 'score') { target = 60 + 25 * n; moves = Math.ceil(target / 6) + 8; }
+  else if (kind === 'lines') { target = 3 + Math.round(n * 0.6); moves = target * 4 + 8; }
+  else { target = Math.min(7, 2 + Math.floor(n / 6)); moves = 24 + target * 2; }
+  target = Math.max(1, Math.round(target * CONFIG.LEVEL_TARGET_X));
+  moves = Math.max(5, Math.round(moves * CONFIG.LEVEL_MOVES_X));
+  return { n, kind, target, moves, diff, fill };
+}
+const goalText = d => d.kind === 'score' ? `Llega a ${d.target} puntos`
+  : d.kind === 'lines' ? `Limpia ${d.target} líneas` : `Haz una racha de ${d.target} limpiezas seguidas`;
+const goalCur = () => S.def.kind === 'score' ? S.score : S.def.kind === 'lines' ? S.linesTotal : S.maxStreak;
+
+// Bloques iniciales al azar (nunca dejan una línea casi completa)
+function prefill(count) {
+  const n = S.n, rowC = Array(n).fill(0), colC = Array(n).fill(0);
+  for (let tries = 0, put = 0; put < count && tries < 400; tries++) {
+    const y = Math.floor(Math.random() * n), x = Math.floor(Math.random() * n);
+    if (S.grid[y][x] || rowC[y] >= n - 2 || colC[x] >= n - 2) continue;
+    S.grid[y][x] = 1 + Math.floor(Math.random() * 8); rowC[y]++; colC[x]++; put++;
+  }
+}
+// Obstáculos de roca para Niveles: ocupan una celda y se rompen al limpiar su fila/columna.
+// Se introducen gradualmente para que los primeros niveles sigan siendo acogedores.
+function seedLevelStones(level) {
+  if (!LVL() || level < 3) return;
+  const n=S.n, count=Math.min(5, 1+Math.floor((level-3)/3));
+  const candidates=[];
+  for(let y=1;y<n-1;y++) for(let x=1;x<n-1;x++) {
+    if(S.grid[y][x]) continue;
+    let around=0; for(let yy=Math.max(0,y-1);yy<=Math.min(n-1,y+1);yy++) for(let xx=Math.max(0,x-1);xx<=Math.min(n-1,x+1);xx++) if(S.grid[yy][xx]) around++;
+    if(around<=3) candidates.push({y,x,score:around+Math.random()*.25});
+  }
+  candidates.sort((a,b)=>a.score-b.score);
+  for(const pos of candidates.slice(0,count)) { S.grid[pos.y][pos.x]=1; S.stones[pos.y][pos.x]=true; }
+}
+
+/* ---------- RELOJ: tiempo para limpiar una línea (se quita desde el menú rápido) ---------- */
+const lineTime = () => Math.max(CONFIG.TIME_MIN, CONFIG.LINE_TIME_S - (S.level - 1) * CONFIG.TIME_DECAY);
+function renderTime() {
+  const el = $('time');
+  el.classList.toggle('hidden', !P.timer);
+  if (!P.timer) return;
+  const t = Math.max(0, S.timeLeft), k = t / lineTime();
+  $('timeBar').style.width = Math.min(100, k * 100) + '%';
+  $('timeTxt').textContent = Math.ceil(t) + 's';
+  el.classList.toggle('crit', k < 0.2); el.classList.toggle('warn', k >= 0.2 && k < 0.45);
+}
+let tLast = performance.now();
+function tickTimer() {                       // corre cada 100 ms; se pausa con menús abiertos
+  const now = performance.now(), dt = Math.min(0.5, (now - tLast) / 1000); tLast = now;
+  if (!P.timer || S.over || S.moves === 0 || blocked()) return;
+  S.timeLeft -= dt;
+  if (S.timeLeft <= 0) { S.timeLeft = 0; renderTime(); return LVL() ? levelFail('time') : gameOver('time'); }
+  const sec = Math.ceil(S.timeLeft);
+  if (sec <= 5 && sec !== S.lastTick) { S.lastTick = sec; sfx.tick(); vibe(10); }
+  renderTime();
+}
+
+/* ---------- HUD ---------- */
+function updateGoal() {                       // barra de meta + jugadas restantes (solo en niveles)
+  if (!LVL()) return;
+  const d = S.def, cur = goalCur();
+  $('goalTxt').textContent = `${GOAL_NAME[d.kind]} ${Math.min(cur, d.target)}/${d.target}`;
+  $('movesTxt').textContent = 'Jugadas: ' + S.movesLeft;
+  $('movesTxt').classList.toggle('low', S.movesLeft <= 3);
+  $('goalBar').style.width = Math.min(100, cur / d.target * 100) + '%';
+}
+const updateHud = () => {
+  const el = $('score');
+  if (S.score < shown) { cancelAnimationFrame(tw); shown = S.score; el.textContent = shown; }
+  else if (S.score > shown) {
+    const from = shown, to = S.score, t0 = performance.now();
+    cancelAnimationFrame(tw);
+    const tick = now => {
+      const k = Math.min(1, (now - t0) / 350);
+      shown = Math.round(from + (to - from) * (1 - Math.pow(1 - k, 3)));
+      el.textContent = shown; if (k < 1) tw = requestAnimationFrame(tick);
+    };
+    tw = requestAnimationFrame(tick);
+    el.classList.remove('bump'); void el.offsetWidth; el.classList.add('bump');
+  }
+  if (LVL()) { $('best').textContent = '★ ' + totalStars(); $('lvlTxt').textContent = 'Nivel ' + S.lv; }
+  else { $('best').textContent = 'Mejor: ' + P.best; $('lvlTxt').textContent = '∞ Nivel ' + S.level; }
+  const per = CONFIG.LEVEL_EVERY_POINTS;
+  $('lvlBar').style.width = (S.level >= CONFIG.MAX_LEVEL ? 100 : (S.score % per) / per * 100) + '%';
+  updateGoal(); renderTime();
+};
+// Insignia de racha: llama SVG animada; cambia de color y crece al subir la racha
+function updateCombo() {
+  if (S.streak >= 2 && !S.over) {
+    $combo.className = 'combo' + (S.streak >= 6 ? ' inferno' : S.streak >= 4 ? ' hot' : '');
+    $combo.style.setProperty('--sc', Math.min(1.25, 1 + (S.streak - 2) * 0.05));
+    $('comboN').textContent = '×' + S.streak;
+    void $combo.offsetWidth; $combo.classList.add('pop');
+  } else $combo.className = 'combo hidden';
+  updateMChip();
+}
+function applyMode() {                        // muestra la fila de meta solo en niveles
+  $('goal').classList.toggle('hidden', !LVL());
+  $('lvlBar').parentNode.classList.toggle('hidden', LVL());
+}
+
+/* ---------- HERRAMIENTAS: Deshacer · Barajar · Bomba · Girar ---------- */
+const TOOL_NAMES = { undo: 'Deshacer', shuffle: 'Barajar', bomb: 'Bomba', rotate: 'Girar' };
+const TOOL_KEYS = ['undo', 'shuffle', 'bomb', 'rotate'];
+function buildTools() {
+  $('tools').innerHTML = TOOL_KEYS.map(k =>
+    `<button class="tool" id="tool-${k}" aria-label="${TOOL_NAMES[k]}">${ICON[k]}<small>${TOOL_NAMES[k]}</small><em class="bd" id="bd-${k}">0</em></button>`).join('');
+  TOOL_KEYS.forEach(k => { $('tool-' + k).onclick = () => useTool(k); });
+}
+function updateTools() {
+  TOOL_KEYS.forEach(k => {
+    const n = S.tools[k], b = $('tool-' + k);
+    $('bd-' + k).textContent = n > 0 ? n : '+';           // "+" = ver anuncio para conseguir una
+    b.classList.toggle('empty', n <= 0); b.classList.toggle('on', S.tool === k);
+  });
+}
+const snapshot = () => ({ grid: S.grid.map(r => r.slice()), stones: (S.stones||[]).map(r=>r.slice()), tray: S.tray.slice(), score: S.score, streak: S.streak, comboMisses: S.comboMisses || 0,
+  moves: S.moves, level: S.level, movesLeft: S.movesLeft, linesTotal: S.linesTotal, maxStreak: S.maxStreak, timeLeft: S.timeLeft });
+function grantTool() {                        // regalo por rachas grandes, tablero limpio o subir de nivel
+  const k = TOOL_KEYS[Math.floor(Math.random() * TOOL_KEYS.length)];
+  if (S.tools[k] >= CONFIG.TOOL_MAX) return;
+  S.tools[k]++; updateTools(); toast('¡Regalo! +1 ' + TOOL_NAMES[k]); sfx.tool();
+}
+function useTool(k) {
+  if (S.over || blocked()) return;
+  if (k === 'rotate' && S.tool === 'rotate') {   // tocar Girar otra vez = salir del modo (sin pedir anuncio)
+    S.tool = null; S.rotPaid = false; updateTools(); redraw(); return;
+  }
+  if (S.tools[k] <= 0) {                      // sin cargas: se ofrece conseguir una viendo un anuncio
+    S.tool = null; updateTools();
+    return Ads.rewarded(() => { S.tools[k]++; updateTools(); toast('+1 ' + TOOL_NAMES[k]); sfx.tool(); }, () => {}, '+1 ' + TOOL_NAMES[k].toUpperCase());
+  }
+  sfx.click();
+  if (k === 'undo') {
+    if (!S.snap) return toast('No hay nada que deshacer');
+    const s = S.snap;
+    Object.assign(S, { grid: s.grid, stones: s.stones || Array.from({length:S.n},()=>Array(S.n).fill(false)), tray: s.tray, score: s.score, streak: s.streak, comboMisses: s.comboMisses || 0, moves: s.moves, level: s.level,
+      movesLeft: s.movesLeft, linesTotal: s.linesTotal, maxStreak: s.maxStreak, timeLeft: s.timeLeft, snap: null,
+      fx: [], placed: [], popups: [], flames: [], shake: null, flash: null, drag: null });
+    S.tools.undo--; track('tools', 1); updateHud(); updateCombo(); updateTools(); sfx.tool(); redraw();
+  } else if (k === 'shuffle') {               // piezas nuevas (solo las que quedaban), con una que ayuda
+    const keep = S.tray.map(Boolean), t = newTray(true, true);
+    S.tray = t.map((p, i) => keep[i] ? p : null);
+    S.tools.shuffle--; track('tools', 1); updateTools(); sfx.tool(); vibe(15); redraw();
+  } else if (k === 'rotate') {                // modo girar: tocar una pieza la gira; 1 carga hasta colocar una pieza
+    S.tool = 'rotate'; S.rotPaid = false; S.bomb = null; updateTools(); toast('Toca una pieza para girarla'); redraw();
+  } else { S.tool = S.tool === 'bomb' ? null : 'bomb'; S.bomb = null; updateTools(); redraw(); }
+}
+// Gira 90° en sentido horario; la primera vez que se gira consume la carga y luego se puede girar a voluntad
+const rotPiece = p => ({ ...p, cells: p.cells.map(([y, x]) => [x, p.h - 1 - y]), h: p.w, w: p.h });
+const cellKey = c => c.map(a => a.join()).sort().join('|');
+function rotTray(i) {
+  const p = S.tray[i]; if (!p) return;
+  const np = rotPiece(p);
+  if (cellKey(np.cells) === cellKey(p.cells)) return toast('Esa pieza no cambia al girar');
+  if (!S.rotPaid) { S.tools.rotate--; track('tools', 1); S.rotPaid = true; updateTools(); sfx.tool(); } else sfx.click();
+  S.tray[i] = np; S.spin = { i, t: performance.now() }; vibe(10); redraw();
+}
+function bombAt(y, x) {                       // limpia un área (3×3 por defecto) del tablero
+  const r = CONFIG.BOMB_RADIUS, cells = [];
+  for (let j = y - r; j <= y + r; j++) for (let i = x - r; i <= x + r; i++)
+    if (j >= 0 && i >= 0 && j < S.n && i < S.n && S.grid[j][i]) cells.push([j, i]);
+  if (!cells.length) return toast('Ahí no hay bloques');
+  const t = performance.now(), s = L.cell;
+  S.snap = snapshot();
+  cells.forEach(([j, i]) => {
+    S.fx.push({ y: j, x: i, color: S.grid[j][i], t, delay: Math.hypot(j - y, i - x) * 30 });
+    S.grid[j][i] = 0; if (S.stones?.[j]) S.stones[j][i] = false;
+  });
+  burst(L.x0 + (x + 0.5) * s, L.y0 + (y + 0.5) * s, '#ffb02e', 18, 7);
+  S.tools.bomb--; track('tools', 1); S.tool = null;
+  S.shake = { t, mag: REDUCED ? 0 : CONFIG.SHAKE_PX * G.shake * 1.4 }; S.flash = G.shake ? { t, a: 0.38 } : null;
+  sfx.bomb(); vibe([30, 30, 60]); updateTools(); redraw();
+}
+
+/* ---------- Partida ---------- */
+function startGame(mode = 'inf', lv = 1, options = {}) {
+  const isDailyChallenge = options?.daily === true && mode === 'inf';
+  const dailySpec = isDailyChallenge ? dailyChallengeSpec(options.date || dayKey(new Date())) : null;
+  S.dailyChallenge = isDailyChallenge; S.dailyChallengeDate = dailySpec?.date || ''; S.dailyChallengeWon = false;
+  gameplayRng = dailySpec ? rng(dailySpec.seed) : null;
+  window.RaddykallAudio?.setMode('puzzle'); sfx.modeStart();
+  clearTimeout(S.timer); Ads.hide(); lastGame = 'pz'; TET.live = false;
+  S.n = CONFIG.GRID_SIZE;
+  S.grid = Array.from({ length: S.n }, () => Array(S.n).fill(0));
+  S.stones = Array.from({ length: S.n }, () => Array(S.n).fill(false));
+  const def = mode === 'lvl' ? levelDef(lv) : null;
+  Object.assign(S, { mode, lv, def, score: 0, streak: 0, comboMisses: 0, moves: 0, level: def ? def.diff : 1,
+                     revives: CONFIG.REVIVES_PER_GAME, linesTotal: 0, maxStreak: 0, failWhy: '',
+                     movesLeft: def ? def.moves : 0, over: false, drag: null, fx: [], popups: [],
+                     parts: [], placed: [], rings: [], beams: [], zoom: null, sweep: G.sweep ? { t: performance.now() + 250 } : null, edge: null, flames: [], fireAcc: 0, shake: null, flash: null, counted: 0, tt: 0, paid: 0, coinsGot: 0,
+                     tools: { undo: CONFIG.TOOL_UNDO, shuffle: CONFIG.TOOL_SHUFFLE, bomb: CONFIG.TOOL_BOMB, rotate: CONFIG.TOOL_ROTATE },
+                     tool: null, rotPaid: false, spin: null, snap: null, bomb: null, bombHeld: false, lastTick: 0, dailyChallenge: isDailyChallenge, dailyChallengeDate: dailySpec?.date || '', dailyChallengeWon: false });
+  if (def) { prefill(def.fill); seedLevelStones(lv); }
+  S.tray = newTray();
+  S.timeLeft = lineTime();
+  $('home').classList.add('hidden'); $('quick').classList.add('hidden');
+  // Always dismiss the level-intro/previous-result overlay when a new run begins.
+  // Without this, the level map's confirmation card can remain over the live board.
+  ov.classList.add('hidden');
+  applyMode(); updateHud(); updateCombo(); updateTools(); layout(); redraw();
+}
+const restart = () => startGame(S.mode, S.lv, { daily: S.dailyChallenge, date: S.dailyChallengeDate });
+function startDailyChallenge() {
+  const spec = dailyChallengeSpec(); dailyRecord(spec.date); closeShop();
+  const firstRun = !P.tut; startGame('inf', 1, { daily: true, date: spec.date });
+  if (firstRun) showTutorial(0);
+}          // reinicia el modo / nivel actual
+
+// Intersticial entre partidas (cada N), luego ejecuta la acción
+const withAd = fn => {
+  const e = CONFIG.INTERSTITIAL_EVERY;
+  (e > 0 && S.games % e === 0) ? Ads.interstitial(fn) : fn();
+};
+
+// Revivir (anuncio con recompensa). SIEMPRE entrega una pieza inteligente que ayuda a limpiar.
+function revive() {
+  const t = performance.now();
+  if (S.failWhy === 'stuck') {                // sin espacio: limpia las filas más llenas + piezas nuevas
+    S.grid.map((r, i) => [i, r.filter(Boolean).length]).sort((a, b) => b[1] - a[1])
+      .slice(0, CONFIG.REVIVE_ROWS).forEach(([y]) => {
+        for (let x = 0; x < S.n; x++) {
+          if (S.grid[y][x]) S.fx.push({ y, x, color: S.grid[y][x], t });
+          S.grid[y][x] = 0; if (S.stones?.[y]) S.stones[y][x] = false;
+        }
+      });
+    S.tray = newTray(true, true);
+  } else {                                    // jugadas o tiempo: se mantiene el tablero y se cambia una pieza
+    const h = helpfulPiece(), i = S.tray.findIndex(Boolean);
+    if (h) S.tray[i >= 0 ? i : 0] = h;
+  }
+  if (LVL() && S.failWhy !== 'time') { S.movesLeft += CONFIG.REVIVE_MOVES; updateGoal(); }
+  S.timeLeft = lineTime(); S.lastTick = 0; renderTime();
+  S.revives--; S.over = false; S.failWhy = '';
+  ov.classList.add('hidden'); sfx.revive(); vibe([30, 40, 30]); redraw();
+}
+
+function gameOver(why = 'stuck') {            // fin del modo infinito
+  S.over = true; S.games++; S.streak = 0; S.comboMisses = 0; S.failWhy = why; updateCombo();
+  const prev = P.best, record = S.score > prev;
+  if (record) { P.best = S.score; save(); }
+  S.result = { record, skins: [] };
+  endStats(S.score);
+  award(S, Math.min(CONFIG.COIN_CAP, Math.floor(S.score / CONFIG.COIN_RATE)));
+  updateHud(); sfx.over(); vibe([80, 40, 120]);
+  S.timer = setTimeout(showOver, 600);
+}
+function levelWin() {
+  S.over = true; S.games++; S.streak = 0; S.comboMisses = 0; updateCombo();
+  const ratio = S.movesLeft / S.def.moves, stars = ratio >= 0.35 ? 3 : ratio >= 0.15 ? 2 : 1;
+  const old = P.stars[S.lv] || 0;
+  P.stars[S.lv] = Math.max(old, stars); P.lv = Math.max(P.lv, S.lv + 1); save();
+  S.result = { stars };
+  endStats(S.score); track('levels', 1);
+  award(S, !old ? 15 + 5 * stars : stars > old ? 10 : 4);      // más monedas la primera vez o al mejorar estrellas
+  updateHud(); sfx.perfect(0.3); confetti(140); vibe([40, 50, 40, 50, 90]);
+  S.timer = setTimeout(showWin, 900);
+}
+function levelFail(why) {
+  S.over = true; S.games++; S.streak = 0; S.comboMisses = 0; S.failWhy = why; updateCombo();
+  updateHud(); sfx.over(); vibe([80, 40, 120]);
+  endStats(S.score);
+  S.timer = setTimeout(showFail, 600);
+}
+function afterMove() {
+  if (S.tray.every(p => !p)) S.tray = newTray();
+  if (LVL()) {
+    S.movesLeft--; updateGoal();
+    if (goalCur() >= S.def.target) return levelWin();         // meta cumplida (gana aunque sea la última jugada)
+    if (S.movesLeft <= 0) return levelFail('moves');
+  }
+  if (!S.tray.some(p => p && fitsAnywhere(p))) LVL() ? levelFail('stuck') : gameOver('stuck');
+}
+
+/* ---------- TUTORIAL (animaciones SVG) ---------- */
+const CC = ['#ff6b6b', '#ffa94d', '#ffd43b', '#4cd68a', '#38c4d9', '#6c8cff', '#b07cff'];
+const rect = (x, y, fill, cls = '') => `<rect class="${cls}" x="${x}" y="${y}" width="24" height="24" rx="6" style="fill:${fill}"/>`;
+const sv = body => `<svg class="demo" viewBox="0 0 220 150" aria-hidden="true">${body}</svg>`;
+const FLAME = '<path d="M12 1C12.6 6.2 19.5 10.2 19.5 19.2C19.5 26.4 16.2 31 12 31C7.8 31 4.5 26.4 4.5 19.2C4.5 15.4 6.6 12.8 8 10.2C8.7 12.4 9.7 13.6 10.9 14.2C10.4 9.6 10.6 5 12 1Z" style="fill:#ffb02e"/><path d="M12 15.5C12.8 18.4 16 20.4 16 24.2C16 27.4 14.2 29.2 12 29.2C9.8 29.2 8 27.4 8 24.2C8 21.6 10.4 19.6 12 15.5Z" style="fill:#fff3b0"/>';
+const txt = (x, y, s, t, fill = 'var(--text)', w = 800) => `<text x="${x}" y="${y}" text-anchor="middle" style="fill:${fill};font:${w} ${s}px system-ui,sans-serif">${t}</text>`;
+const DEMOS = {
+  drag() {                                    // una pieza se arrastra hasta encajar
+    let b = '';
+    for (let r = 0; r < 4; r++) for (let c = 0; c < 5; c++) b += rect(45 + c * 26, 10 + r * 26, 'var(--board)');
+    [0, 1, 2].forEach(c => { b += rect(45 + c * 26, 88, CC[c + 1]); });
+    b += `<g class="d-piece">${rect(123, 88, CC[3])}${rect(149, 88, CC[3])}</g>`;
+    b += '<circle class="d-piece" cx="161" cy="112" r="10" style="fill:rgba(255,255,255,.9);stroke:#6a52ff;stroke-width:2.5"/>';
+    return sv(b);
+  },
+  clear() {                                   // una fila se completa y desaparece
+    let b = '';
+    for (let i = 0; i < 6; i++) b += `<rect x="${30 + i * 26}" y="62" width="24" height="24" rx="6" style="fill:none;stroke:var(--board);stroke-width:2;stroke-dasharray:4 3"/>`;
+    for (let i = 0; i < 5; i++) b += rect(30 + i * 26, 62, CC[i], 'd-row');
+    b += rect(160, 62, CC[5], 'd-dropcell');
+    return sv(b);
+  },
+  combo() {                                   // la racha crece: ×2 ×3 ×4
+    const it = (x, n, sc, d) => `<g class="d-pop" style="animation-delay:${d}s"><g transform="translate(${x} ${105 - 32 * sc}) scale(${sc})">${FLAME}</g>${txt(x + 12 * sc, 134, 20, '×' + n, 'var(--text)', 900)}</g>`;
+    return sv(it(36, 2, 1.1, 0) + it(98, 3, 1.5, 0.7) + it(160, 4, 2, 1.4));
+  },
+  modes() {                                   // niveles con estrellas / infinito
+    const st = (x, d) => `<text class="d-pop" x="${x}" y="78" text-anchor="middle" style="animation-delay:${d}s;fill:#ffc02e;font:900 30px system-ui,sans-serif">★</text>`;
+    return sv(st(32, 0) + st(62, 0.25) + st(92, 0.5) +
+      '<line x1="118" y1="40" x2="118" y2="125" style="stroke:var(--board);stroke-width:2"/>' +
+      `<text class="d-tool" x="168" y="88" text-anchor="middle" style="fill:var(--accent);font:900 56px system-ui,sans-serif">∞</text>` +
+      txt(62, 118, 13, 'Niveles') + txt(168, 118, 13, 'Infinito'));
+  },
+  tools() {                                   // las cuatro herramientas
+    const t = (x, k, d) => `<g class="d-tool" style="animation-delay:${d}s"><circle cx="${x}" cy="60" r="24" style="fill:var(--bg);stroke:var(--accent);stroke-width:3"/>` +
+      `<svg x="${x - 13}" y="47" width="26" height="26" viewBox="0 0 24 24" style="stroke:var(--text);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round">${PATHS[k]}</svg></g>${txt(x, 112, 11.5, TOOL_NAMES[k])}`;
+    return sv(t(32, 'undo', 0) + t(86, 'shuffle', 0.7) + t(140, 'bomb', 1.4) + t(194, 'rotate', 2.1));
+  },
+  time() {                                    // la barra de tiempo se vacía
+    return sv('<rect x="30" y="58" width="160" height="16" rx="8" style="fill:var(--board)"/>' +
+      '<rect class="d-bar" x="30" y="58" width="160" height="16" rx="8" style="fill:#4cd68a"/>' +
+      txt(110, 108, 14, 'Limpia una línea a tiempo'));
+  },
+};
+const TUT = [
+  { demo: 'drag', title: 'Arrastra las piezas', text: 'Toma una pieza de la bandeja y suéltala en el tablero. Si no encaja, usa la herramienta Girar (⟳) para cambiar su posición.' },
+  { demo: 'clear', title: 'Completa filas y columnas', text: 'Cada fila o columna completa desaparece y suma puntos. Limpiar varias a la vez da aún más.' },
+  { demo: 'combo', title: 'Encadena rachas', text: 'Limpia líneas en jugadas seguidas y la racha se enciende: más fuego, más puntos.' },
+  { demo: 'modes', title: 'Dos modos de juego', text: 'Niveles: cumple la meta antes de quedarte sin jugadas y gana estrellas. Infinito: juega sin fin y supera tu récord.' },
+  { demo: 'tools', title: 'Herramientas', text: 'Deshacer, Barajar, Bomba y Girar te sacan de apuros. Ganas más con rachas, al subir de nivel o viendo un anuncio.' },
+  { demo: 'time', title: 'El reloj', text: 'Con el límite de tiempo activo, limpia una línea antes de que se vacíe la barra. Puedes quitarlo en el menú rápido (☰).' },
+];
+let tutStep = 0;
+function showTutorial(step = 0) {
+  tutStep = step;
+  const d = TUT[step], last = step === TUT.length - 1;
+  $('tut').innerHTML = `<div class="card tutc">${DEMOS[d.demo]()}<h2>${d.title}</h2><p>${d.text}</p>
+    <div class="dots">${TUT.map((_, i) => `<i class="${i === step ? 'on' : ''}"></i>`).join('')}</div>
+    <button class="btn" data-a="tnext">${last ? '¡A jugar!' : 'Siguiente'}</button>
+    ${last ? '' : '<button class="btn ghost" data-a="tskip">Saltar</button>'}</div>`;
+  $('tut').classList.remove('hidden');
+}
+function endTutorial() { P.tut = true; save(); $('tut').classList.add('hidden'); }
+
+/* ---------- Pantallas ---------- */
+function showOver() {
+  const r = S.result || { record: false, skins: [] };
+  const dailySummary = S.dailyChallenge ? (() => { const spec = dailyChallengeSpec(S.dailyChallengeDate || dayKey(new Date())), rec = dailyRecord(spec.date), value = dailyMetric(S, spec); return `<div class="daily-result${rec.completed ? ' done' : ''}"><small>Puzzle diario · ${spec.date}</small><b>${Math.min(value, spec.target)} / ${spec.target} ${dailyUnit(spec)}</b><span>${rec.completed ? 'Puzzle diario completado · premio de hoy cobrado' : `Mejor de hoy: ${Math.min(rec.best, spec.target)} / ${spec.target}. Inténtalo mañana o repite para mejorar.`}</span></div>`; })() : '';
+  ov.innerHTML = `<div class="card"><h2>${S.failWhy === 'time' ? '¡Se acabó el tiempo!' : 'Sin movimientos'}</h2><div class="big">${S.score}</div>
+    <p>${r.record ? '🏆 ¡Nuevo récord!' : 'Mejor: ' + P.best}</p>${dailySummary}${coinLine(S)}
+    ${S.revives > 0 && Ads.hasRewarded() ? '<button class="btn" data-a="revive">▶ Revivir (ver anuncio)</button>' : ''}
+    <button class="btn ${S.revives > 0 && Ads.hasRewarded() ? 'ghost' : ''}" data-a="again">Jugar de nuevo</button>
+    <button class="btn ghost" data-a="m_share">Compartir</button>
+    <button class="btn ghost" data-a="menu">Menú</button></div>`;
+  ov.classList.remove('hidden');
+}
+function showWin() {
+  const r = S.result, more = S.lv < CONFIG.LEVEL_COUNT;
+  const stars = [1, 2, 3].map(i => `<span class="st${i <= r.stars ? ' on' : ''}">★</span>`).join('');
+  ov.innerHTML = `<div class="card"><h2>¡Nivel ${S.lv} completado!</h2><div class="stars">${stars}</div>
+    <p>Puntos: ${S.score} — Jugadas sobrantes: ${S.movesLeft}</p>${coinLine(S)}
+    ${more ? '<button class="btn" data-a="next">Siguiente nivel</button>' : ''}
+    <button class="btn ${more ? 'ghost' : ''}" data-a="retry">Repetir nivel</button>
+    <button class="btn ghost" data-a="m_share">Compartir</button>
+    <button class="btn ghost" data-a="levels">Mapa de niveles</button></div>`;
+  ov.classList.remove('hidden');
+}
+function showFail() {
+  const w = S.failWhy;
+  const title = w === 'moves' ? 'Se acabaron las jugadas' : w === 'time' ? '¡Se acabó el tiempo!' : 'Sin espacio para las piezas';
+  const help = w === 'moves' ? '+' + CONFIG.REVIVE_MOVES + ' jugadas' : w === 'time' ? 'Más tiempo' : 'Seguir jugando';
+  ov.innerHTML = `<div class="card"><h2>${title}</h2>
+    <div class="goalbox">${goalText(S.def)}<br>Llevas <b>${Math.min(goalCur(), S.def.target)}/${S.def.target}</b></div>
+    ${S.revives > 0 && Ads.hasRewarded() ? `<button class="btn" data-a="revive">▶ ${help} (ver anuncio)</button>` : ''}
+    <button class="btn ${S.revives > 0 && Ads.hasRewarded() ? 'ghost' : ''}" data-a="retry">Reintentar</button>
+    <button class="btn ghost" data-a="levels">Mapa de niveles</button></div>`;
+  ov.classList.remove('hidden');
+}
+function showLevels() {                       // mapa de niveles por capítulos, con cofre
+  const lockIcon = '<svg class="ui-lock" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="10" width="16" height="11" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3" fill="none" stroke="currentColor" stroke-width="2"/></svg>';
+  const size = CONFIG.CHAPTER_SIZE, chapters = Math.ceil(CONFIG.LEVEL_COUNT / size);
+  let html = '';
+  for (let c = 0; c < chapters; c++) {
+    const a = c * size + 1, b = Math.min(CONFIG.LEVEL_COUNT, a + size - 1), total = b - a + 1;
+    let stars = 0, done = 0, cells = '';
+    for (let n = a; n <= b; n++) {
+      const open = CONFIG.LEVELS_OPEN || n <= P.lv, st = P.stars[n] || 0;
+      stars += st; if (st) done++;
+      cells += `<button class="lvb${n === P.lv ? ' cur' : ''}" data-a="lv" data-n="${n}" ${open ? '' : 'disabled'}>${n}<small>${open ? '★'.repeat(st) + '☆'.repeat(3 - st) : lockIcon}</small></button>`;
+    }
+    const got = P.ch[c], ready = done === total && !got, r = coinX(CONFIG.CHEST_COINS + 10 * c);
+    html += `<div class="chh"><b>${c + 1}. ${CH_NAMES[c % CH_NAMES.length]}</b><small>★ ${stars}/${total * 3}</small></div><div class="lvgrid">${cells}</div>
+      <button class="chest${ready ? ' ready' : ''}${got ? ' got' : ''}" data-a="m_chest" data-ch="${c}" ${ready ? '' : 'disabled'}>${ICON.chest}
+      <span>${got ? 'Cofre abierto' : ready ? '¡Abrir cofre!' : `Cofre: ${done}/${total} niveles superados`}</span><em>${got ? '✓' : '+' + r + ' ' + ICON.coin}</em></button>`;
+  }
+  ov.innerHTML = `<div class="card" style="width:340px"><h2>Mapa de niveles</h2><p>Estrellas: <b>${totalStars()}</b></p>${html}
+    <button class="btn ghost" data-a="menu">‹ Volver</button></div>`;
+  ov.classList.remove('hidden');
+  const cur = ov.querySelector('.cur'); if (cur && cur.scrollIntoView) cur.scrollIntoView({ block: 'center' });
+}
+function showIntro(n) {                       // meta del nivel antes de jugar
+  const d = levelDef(n);
+  ov.innerHTML = `<div class="card"><h2>Nivel ${n}</h2>
+    <div class="goalbox"><b>Meta:</b> ${goalText(d)}<br><b>Jugadas:</b> ${d.moves}${d.fill ? '<br><b>Bloques iniciales:</b> ' + d.fill : ''}</div>
+    <button class="btn" data-a="startlv" data-n="${n}">Jugar</button>
+    <button class="btn ghost" data-a="levels">‹ Volver</button></div>`;
+  ov.classList.remove('hidden');
+}
+function showSkins() {
+  const lockIcon = '<svg class="ui-lock" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="10" width="16" height="11" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3" fill="none" stroke="currentColor" stroke-width="2"/></svg>';
+  const skins = SKINS.map((k, i) => {
+    const open = unlocked(i);
+    return `<button class="skin${P.skin === i ? ' sel' : ''}" data-skin="${i}" ${open ? '' : 'disabled'}>
+      <span class="sw">${k.pal.slice(0, 4).map(c => `<u style="background:${c}"></u>`).join('')}</span>
+      ${k.name}<small>${open ? '' : lockIcon + ' récord ' + k.unlock}</small></button>`;
+  }).join('');
+  ov.innerHTML = `<div class="card"><h2>Skins</h2><p>Elige el estilo de tus bloques</p>
+    <div class="skins">${skins}</div><button class="btn ghost" data-a="menu">‹ Volver</button></div>`;
+  ov.classList.remove('hidden');
+}
+
+/* Menú principal: pantalla de inicio con logo, modos y accesos rápidos */
+function showMenu() {
+  window.RaddykallAudio?.setMode('puzzle');
+  ov.classList.add('hidden'); $('quick').classList.add('hidden');
+  const live = !S.over && S.moves > 0 && lastGame !== 'tet', tlive = TET.live && !TET.over && lastGame === 'tet';
+  const playerLevel = Math.max(1, Math.min(CONFIG.LEVEL_COUNT, Number(P.lv)||1));
+  const lockSvg = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="10" width="16" height="11" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3" fill="none" stroke="currentColor" stroke-width="2"/></svg>';
+  const modeButton = (klass, action, label, subtitle, required) => {
+    // Infinito está abierto desde el nivel 1; los demás modos mantienen su progresión habitual.
+    const open = klass === 'inf' || P.dev === true || playerLevel >= required;
+    const art = HOME_ICONS[klass] || HOME_ICONS.go;
+    return `<button class="hbtn ${klass}${open?'':' mode-locked'}" data-a="${open?action:'lockedmode'}" ${open?'':`data-required="${required}" aria-label="${label}, bloqueado hasta el nivel ${required}"`}><span class="hbtn-icon">${art}</span><span class="hbtn-copy"><b>${label}</b><small>${open?subtitle:`Se desbloquea en nivel ${required}`}</small></span>${open?'':`<span class="mode-lock-icon">${lockSvg}</span>`}</button>`;
+  };
+  const bits = Array.from({ length: G.fall }, (_, i) => {         // bloques de colores que caen de fondo
+    const sz = 14 + (i * 7) % 22;
+    return `<i style="left:${(i * 37) % 96}%;width:${sz}px;height:${sz}px;animation-duration:${9 + (i * 5) % 8}s;animation-delay:-${(i * 3) % 11}s;background:${CC[i % 7]}"></i>`;
+  }).join('');
+  $('home').innerHTML = `<div class="fall">${bits}</div><div class="hm">${homeBar()}
+    <img id="ttl" class="logo" src="${LOGO}" alt="Raddykall Puzzle">
+    ${tlive ? `<button class="hbtn go" data-a="tet_cont"><span class="hbtn-icon">${HOME_ICONS.go}</span><span class="hbtn-copy"><b>Continuar</b><small>Clásico — ${TET.score} puntos</small></span></button>` : ''}
+    ${live ? `<button class="hbtn go" data-a="play"><span class="hbtn-icon">${HOME_ICONS.go}</span><span class="hbtn-copy"><b>Continuar</b><small>${S.dailyChallenge ? 'Reto diario' : S.mode === 'lvl' ? 'Nivel ' + S.lv : '∞ ' + S.score + ' puntos'}</small></span></button>` : ''}
+    <button class="hbtn lv" data-a="levels"><span class="hbtn-icon">${HOME_ICONS.lv}</span><span class="hbtn-copy"><b>Modo niveles</b><small>Nivel ${Math.min(P.lv, CONFIG.LEVEL_COUNT)} — ★ ${totalStars()}</small></span></button>
+    ${modeButton('inf','inf','Modo infinito',`Récord ${P.best}`,1)}
+    ${modeButton('tet','tet','Modo clásico',`Bloques que caen — Récord ${P.tbest || 0}`,6)}
+
+    <div class="rk-ad-slot rk-ad-home" data-ad-slot="home-banner" role="complementary" aria-label="Espacio reservado para publicidad">
+      <span class="rk-ad-label">PUBLICIDAD</span><span class="rk-ad-message">Espacio reservado para anuncio</span>
+    </div>
+    ${homeNav()}
+    <div class="ver">Raddykall Puzzle · v${CONFIG.APP_VERSION}</div>
+  </div>`;
+  $('home').classList.remove('hidden');
+}
+
+/* Tarjeta de gráficos: Bajo · Medio · Alto (se aplica al instante) */
+function showGfx() {
+  const opts = GFX.map((g, i) => `<button type="button" class="gopt${P.gfx === i ? ' sel' : ''}" data-gfx="${i}" aria-pressed="${P.gfx === i}">
+    <span><b>${g.name}</b><small>${GFX_INFO[i]}</small></span><span class="gb">${'●'.repeat(i + 1)}${'○'.repeat(2 - i)}</span></button>`).join('');
+  ov.innerHTML = `<div class="card"><h2>Gráficos</h2><p>Elige la calidad visual. Si notas lentitud, baja un nivel.</p>
+    <div class="gfxs">${opts}</div><button class="btn" data-a="gfxok">Listo</button></div>`;
+  ov.classList.remove('hidden');
+  // Only a direct click on a real graphics option can change quality.
+  // Do not delegate these clicks to the generic menu router.
+  ov.querySelectorAll('button[data-gfx]').forEach(button => {
+    button.addEventListener('click', event => {
+      event.preventDefault();
+      event.stopPropagation();
+      const index = Number(button.getAttribute('data-gfx'));
+      if (!Number.isInteger(index) || index < 0 || index >= GFX.length) return;
+      setGfx(index, true);
+      showGfx();
+    }, { once: true });
+  });
+}
+
+/* Menú rápido (☰ en partida): ajustes al instante sin salir del juego */
+function showQuick() {
+  const q = $('quick');
+  q.innerHTML = `<div class="qs"><div class="grab"></div><h2>Menú rápido</h2>
+    <div class="dock">${dockBtns()}</div>
+    <button class="btn" data-a="play">Continuar</button>
+    <div class="row2"><button class="btn ghost" data-a="tut">Cómo jugar</button><button class="btn ghost" data-a="gfx">Gráficos: <span class="gfxcur">${G.name}</span></button></div>
+    <div class="row2"><button class="btn ghost" data-a="restartq">Reiniciar</button><button class="btn ghost" data-a="home">Menú principal</button></div></div>`;
+  q.classList.remove('hidden');
+}
+
+function onClick(e) {
+  const target = e.target instanceof Element ? e.target : e.target?.parentElement;
+  if (!target) return;
+  if (target.id === 'quick') return $('quick').classList.add('hidden');       // toque fuera = cerrar
+  // Acceso oculto a desarrollador: 10 toques rápidos sobre la etiqueta de versión del pie.
+  if (target.closest('.ver')) return devTap();
+  // El fondo del menú principal es decorativo: los toques fuera de controles no deben disparar acciones.
+  if (e.currentTarget.id === 'home' && !target.closest('button[data-a],button[data-skin],button[data-t]')) {
+    e.preventDefault();
+    return;
+  }
+  // Quality selection is handled only by showGfx()'s direct button listeners above.
+  const b = target.closest('[data-a],[data-skin],[data-t]');
+  if (!b) return;
+  sfx.click();
+  const d = b.dataset, q = $('quick'), h = $('home');
+  if (d.gfx != null) { setGfx(+d.gfx, true); showGfx(); }
+  else if (d.skin != null) { P.skin = +d.skin; save(); showSkins(); redraw(); }
+  else if (d.t) {                             // interruptores: se actualizan en sitio, sin recargar la pantalla
+    P[d.t] = !P[d.t]; save(); snd.sync(); b.setAttribute('aria-pressed', P[d.t]);
+    if (d.t === 'timer') { S.timeLeft = lineTime(); S.lastTick = 0; renderTime(); }
+  }
+  else if (d.a && d.a.startsWith('sh_')) shopAction(d.a, d);
+  else if (d.a && d.a.startsWith('m_')) metaAction(d.a, d);
+  else if (d.a && d.a.startsWith('tet')) tetAction(d.a);
+  else if (d.a === 'play') { h.classList.add('hidden'); q.classList.add('hidden'); }
+  else if (d.a === 'menu') h.classList.contains('hidden') ? showMenu() : ov.classList.add('hidden');
+  else if (d.a === 'home') showMenu();
+  else if (d.a === 'levels') showLevels();
+  else if (d.a === 'skins') openShop('skins');
+  else if (d.a === 'gfx') { q.classList.add('hidden'); showGfx(); }
+  else if (d.a === 'gfxok') { TET.on && !TET.over ? tetPause() : ov.classList.add('hidden'); }
+  else if (d.a === 'lv') showIntro(+d.n);
+  else if (d.a === 'startlv') { const firstRun = !P.tut; startGame('lvl', +d.n); if (firstRun) showTutorial(0); }
+  else if (d.a === 'lockedmode') toast(`Sigue avanzando: este modo se desbloquea al llegar al nivel ${+d.required}.`);
+  else if (d.a === 'inf') { const firstRun = !P.tut; startGame('inf'); if (firstRun) showTutorial(0); }
+  else if (d.a === 'restartq') restart();
+  else if (d.a === 'tut') { q.classList.add('hidden'); showTutorial(0); }
+  else if (d.a === 'tnext') tutStep < TUT.length - 1 ? showTutorial(tutStep + 1) : endTutorial();
+  else if (d.a === 'tskip') endTutorial();
+  else if (d.a === 'again' || d.a === 'retry') withAd(restart);
+  else if (d.a === 'next') withAd(() => startGame('lvl', S.lv + 1));
+  else if (d.a === 'revive') Ads.rewarded(revive, LVL() ? showFail : showOver);
+}
+[ov, $('home'), $('quick'), $('tut'), $('shop'), $('page')].forEach(el => el.addEventListener('click', onClick));
+
+/* =====================================================================
+   8. RENDER (canvas) + EFECTOS VISUALES
+   ===================================================================== */
+const cv = $('cv'), ctx = cv.getContext('2d');
+const L = {}, T = {};
+let cw = 0, chh = 0, raf = 0, dpr = 1;
+const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;   // respeta accesibilidad
+const PRAISE = ['¡Bien!', '¡Dulce!', '¡Delicioso!', '¡Divino!', '¡Increíble!', '¡Tablero limpio!'];
+const PRAISE_COL = [['#ffffff', '#bfe3ff'], ['#fff3a0', '#ffc940'], ['#ffd56a', '#ff8a3d'],
+                    ['#ffb3d1', '#ff4f9a'], ['#e6c8ff', '#8f5bff'],
+                    ['#ff8a8a', '#ffe66d', '#6ee7a0', '#6ec6ff', '#c28bff']];
+const easeOutBack = x => { const c = 1.70158; return 1 + (c + 1) * Math.pow(x - 1, 3) + c * Math.pow(x - 1, 2); };
+
+function readTheme() {
+  const cs = getComputedStyle(document.documentElement);
+  ['board', 'cell', 'text', 'accent', 'bg'].forEach(k => T[k] = cs.getPropertyValue('--' + k).trim());
+  const m = /^#([0-9a-f]{6})$/i.exec(T.bg), v = m ? [0, 2, 4].map(i => parseInt(m[1].substr(i, 2), 16)) : [255, 255, 255];
+  T.dark = (v[0] * 299 + v[1] * 587 + v[2] * 114) / 1000 < 128;          // para elegir el modo de mezcla del fuego
+}
+
+function layout() {
+    // Acomoda el tablero y la bandeja dentro del alto REAL del canvas.
+    // No forzar un margen superior mayor que el espacio que queda evita cortar
+    // la bandeja/controles en móviles con la barra de anuncios visible.
+    const immersiveGrid = S.mode === 'inf' || S.mode === 'lvl';
+    const n = S.n, pad = immersiveGrid ? 10 : 12, topR = immersiveGrid ? 18 : 32;
+    const trayRows = immersiveGrid ? 2.22 : 3.4;
+    const widthCell = Math.max(1, (cw - pad * 2) / n);
+    const heightCell = Math.max(1, (chh - topR - pad) / (n + trayRows));
+    L.cell = Math.max(1, Math.floor(Math.min(widthCell, heightCell)));
+    L.bs = L.cell * n;
+    L.trayH = L.cell * trayRows;
+    L.x0 = Math.round((cw - L.bs) / 2);
+    const contentH = L.bs + pad + L.trayH;
+    // Centrar cuando haya sitio; si falta altura, priorizar que nada desborde.
+    L.y0 = Math.max(0, Math.min(topR, Math.floor((chh - contentH) / 2)));
+    if (L.y0 + contentH > chh) L.y0 = Math.max(0, chh - contentH);
+    L.trayY = L.y0 + L.bs + pad;
+    L.slotW = cw / S.tray.length;
+  }
+const trayPS = p => Math.min(CONFIG.TRAY_SCALE * L.cell, L.slotW * 0.85 / p.w, L.trayH * 0.9 / p.h);
+
+/* ---------- Primitivas de dibujo ---------- */
+function rrc(c, x, y, w, h, r, fill) {
+  c.fillStyle = fill; c.beginPath();
+  c.roundRect ? c.roundRect(x, y, w, h, r) : c.rect(x, y, w, h);
+  c.fill();
+}
+const rr = (x, y, w, h, r, fill) => rrc(ctx, x, y, w, h, r, fill);
+// Aclara (a>0) u oscurece (a<0) un color #rrggbb, con caché
+const shadeCache = new Map();
+function shade(hex, a) {
+  const key = hex + a;
+  if (shadeCache.has(key)) return shadeCache.get(key);
+  let out = hex;
+  if (/^#[0-9a-f]{6}$/i.test(hex)) {
+    const v = [1, 3, 5].map(i => parseInt(hex.substr(i, 2), 16)), m = a > 0 ? 255 : 0, k = Math.abs(a);
+    out = '#' + v.map(c => Math.round(c + (m - c) * k).toString(16).padStart(2, '0')).join('');
+  }
+  shadeCache.set(key, out); return out;
+}
+// Margen extra del sprite: resplandor del Neón o sombra suave (calidad Alta)
+const cellPad = (B, st, q) => st === 'kit-glossy' ? 0 : Math.ceil(B * (st === 'neon' ? (q >= 2 ? 0.55 : q === 1 ? 0.4 : 0) : q >= 2 ? 0.16 : 0));
+// Pinta UNA celda en el contexto c (solo se usa para crear el sprite). q: 0 bajo · 1 medio · 2 alto
+function paintCell(c, x, y, s, color, st, q = 1) {
+  const largeGrid = S.mode === 'lvl' || S.mode === 'inf';
+  const g = Math.max(0.65, s * (largeGrid ? 0.018 : 0.07)), w = s - g * 2, X = x + g, Y = y + g;
+  // The default block modes use a taller face so a tile fills its cell instead of looking undersized.
+  c.save();
+  if (largeGrid) { c.translate(0, Y); c.scale(1, 1.08); c.translate(0, -Y); }
+  const rad = s * ({pixel:0, gem:.28, emerald:.22, ice:.18, prism:.2, wood:.12, metal:.12, stone:.14, magma:.15, aurora:.18, galaxy:.18, obsidian:.13, jelly:.28}[st] ?? .2);
+  const poly = (pts, fill, stroke, lw = Math.max(1, s * .025)) => {
+    c.beginPath(); c.moveTo(pts[0][0], pts[0][1]);
+    for (let i = 1; i < pts.length; i++) c.lineTo(pts[i][0], pts[i][1]);
+    c.closePath(); if (fill) { c.fillStyle = fill; c.fill(); }
+    if (stroke) { c.strokeStyle = stroke; c.lineWidth = lw; c.stroke(); }
+  };
+  const strokeRound = (xx, yy, ww, hh, rr, stroke, lw) => {
+    c.beginPath(); c.roundRect ? c.roundRect(xx, yy, ww, hh, rr) : c.rect(xx, yy, ww, hh);
+    c.strokeStyle = stroke; c.lineWidth = lw; c.stroke();
+  };
+  const clipRound = () => { c.beginPath(); c.roundRect ? c.roundRect(X, Y, w, w * .91, rad) : c.rect(X, Y, w, w * .91); c.clip(); };
+  if (q >= 1 && !['neon','pixel'].includes(st)) {
+    c.save(); c.shadowColor = 'rgba(0,0,0,.32)'; c.shadowBlur = s * .095; c.shadowOffsetY = s * .065;
+    rrc(c, X, Y + w * .06, w, w * .91, rad, shade(color, -.34)); c.restore();
+  }
+
+  if (st === 'wood') {
+    // Roble: profundidad lateral, laca cálida, vetas curvas y nudos de madera visibles.
+    rrc(c, X, Y + w*.07, w, w*.91, rad, shade(color, -.46));
+    const face = c.createLinearGradient(X, Y, X+w*.85, Y+w);
+    face.addColorStop(0, shade(color,.28)); face.addColorStop(.34,color); face.addColorStop(.72,shade(color,-.09)); face.addColorStop(1,shade(color,-.28));
+    rrc(c, X, Y, w, w*.91, rad, face); c.save(); clipRound();
+    c.lineCap='round';
+    const grain = [0.15,0.31,0.52,0.70,0.83];
+    grain.forEach((f,i)=>{
+      c.beginPath(); c.moveTo(X-w*.04,Y+w*f);
+      c.bezierCurveTo(X+w*.17,Y+w*(f-.09),X+w*.29,Y+w*(f+.08),X+w*.48,Y+w*f);
+      c.bezierCurveTo(X+w*.66,Y+w*(f-.06),X+w*.78,Y+w*(f+.05),X+w*1.04,Y+w*(f-.015));
+      c.strokeStyle=i%2?'rgba(73,35,13,.22)':'rgba(255,225,166,.25)'; c.lineWidth=Math.max(.65,s*(i%2?.023:.017)); c.stroke();
+    });
+    // Knot rings and a dark core give the piece the appearance of a real cut plank.
+    const kx=X+w*.68, ky=Y+w*.48;
+    c.strokeStyle='rgba(76,35,12,.46)'; c.lineWidth=Math.max(.8,s*.022);
+    [1,.68,.37].forEach((f,i)=>{c.beginPath();c.ellipse(kx,ky,w*.11*f,w*.065*f,-.22,0,Math.PI*2);c.stroke();});
+    c.fillStyle='rgba(71,34,13,.48)'; c.beginPath(); c.ellipse(kx,ky,w*.019,w*.013,-.22,0,Math.PI*2);c.fill();
+    c.restore();
+    // Top bevel and bottom edge.
+    strokeRound(X+.5,Y+.5,w-1,w*.9,rad,'rgba(255,238,191,.55)',Math.max(1,s*.024));
+    c.fillStyle='rgba(255,239,198,.34)';c.fillRect(X+w*.12,Y+w*.06,w*.48,Math.max(1,s*.025));
+  } else if (st === 'metal') {
+    // Titanium: steel gradient, brushed hairlines, chamfered edges and raised fasteners.
+    rrc(c,X,Y+w*.07,w,w*.91,rad,'#283441');
+    const steel=c.createLinearGradient(X,Y,X+w,Y+w*.82);
+    steel.addColorStop(0,shade(color,.46));steel.addColorStop(.17,shade(color,.16));steel.addColorStop(.38,color);steel.addColorStop(.57,shade(color,-.14));steel.addColorStop(.78,shade(color,.24));steel.addColorStop(1,shade(color,-.4));
+    rrc(c,X,Y,w,w*.91,rad,steel); c.save();clipRound();
+    for(let i=0;i<7;i++){const yy=Y+w*(.12+i*.105);c.strokeStyle=i%2?'rgba(255,255,255,.13)':'rgba(11,20,32,.18)';c.lineWidth=Math.max(.6,s*.012);c.beginPath();c.moveTo(X+w*.07,yy);c.lineTo(X+w*.93,yy-w*.025);c.stroke();}
+    const rivet=(rx,ry)=>{const rr=Math.max(1.4,w*.045),rg=c.createRadialGradient(rx-rr*.4,ry-rr*.45,.1,rx,ry,rr*1.3);rg.addColorStop(0,'#ffffff');rg.addColorStop(.32,'#b9c6d4');rg.addColorStop(1,'#334454');c.fillStyle=rg;c.beginPath();c.arc(rx,ry,rr,0,Math.PI*2);c.fill();c.strokeStyle='rgba(16,26,38,.7)';c.lineWidth=Math.max(.5,s*.012);c.stroke();};
+    [[.14,.16],[.86,.16],[.14,.78],[.86,.78]].forEach(([rx,ry])=>rivet(X+w*rx,Y+w*ry));
+    c.restore();
+    strokeRound(X+.5,Y+.5,w-1,w*.9,rad,'rgba(255,255,255,.66)',Math.max(1,s*.03));
+    c.strokeStyle='rgba(255,255,255,.48)';c.lineWidth=Math.max(1,s*.025);c.beginPath();c.moveTo(X+w*.22,Y+w*.07);c.lineTo(X+w*.77,Y+w*.07);c.stroke();
+  } else if (st === 'ice') {
+    const ice=c.createLinearGradient(X,Y,X+w,Y+w);ice.addColorStop(0,'#f4ffff');ice.addColorStop(.22,shade(color,.25));ice.addColorStop(.58,color);ice.addColorStop(1,shade(color,-.34));
+    rrc(c,X,Y+w*.06,w,w*.91,rad,shade(color,-.38));rrc(c,X,Y,w,w*.9,rad,ice);c.save();clipRound();
+    poly([[X+w*.05,Y+w*.18],[X+w*.45,Y+w*.04],[X+w*.61,Y+w*.40],[X+w*.28,Y+w*.54]],'rgba(255,255,255,.48)','rgba(255,255,255,.32)',Math.max(.6,s*.015));
+    poly([[X+w*.61,Y+w*.05],[X+w*.98,Y+w*.27],[X+w*.7,Y+w*.57],[X+w*.53,Y+w*.38]],'rgba(184,244,255,.30)','rgba(255,255,255,.35)',Math.max(.6,s*.014));
+    poly([[X+w*.1,Y+w*.72],[X+w*.36,Y+w*.48],[X+w*.56,Y+w*.95],[X+w*.15,Y+w*.91]],'rgba(255,255,255,.15)',null);
+    c.strokeStyle='rgba(255,255,255,.65)';c.lineWidth=Math.max(.7,s*.018);c.beginPath();c.moveTo(X+w*.22,Y+w*.13);c.lineTo(X+w*.43,Y+w*.38);c.lineTo(X+w*.36,Y+w*.52);c.moveTo(X+w*.78,Y+w*.45);c.lineTo(X+w*.63,Y+w*.66);c.lineTo(X+w*.71,Y+w*.82);c.stroke();
+    c.restore();strokeRound(X+.5,Y+.5,w-1,w*.89,rad,'rgba(245,255,255,.7)',Math.max(1,s*.025));
+  } else if (st === 'prism' || st === 'gem' || st === 'emerald') {
+    // Gemstone/prism cuts with a unique central table and triangular facets.
+    const gemGrad=c.createLinearGradient(X,Y,X+w,Y+w);gemGrad.addColorStop(0,shade(color,.5));gemGrad.addColorStop(.32,color);gemGrad.addColorStop(.68,shade(color,-.12));gemGrad.addColorStop(1,shade(color,-.48));
+    rrc(c,X,Y+w*.07,w,w*.91,rad,shade(color,-.5));
+    if(st==='emerald') {
+      poly([[X+w*.18,Y],[X+w*.82,Y],[X+w,Y+w*.18],[X+w,Y+w*.76],[X+w*.78,Y+w*.91],[X+w*.22,Y+w*.91],[X,Y+w*.76],[X,Y+w*.18]],gemGrad,'rgba(225,255,230,.72)',Math.max(1,s*.025));
+      poly([[X+w*.23,Y+w*.12],[X+w*.77,Y+w*.12],[X+w*.84,Y+w*.23],[X+w*.84,Y+w*.68],[X+w*.72,Y+w*.8],[X+w*.28,Y+w*.8],[X+w*.16,Y+w*.68],[X+w*.16,Y+w*.23]],'rgba(255,255,255,.12)','rgba(255,255,255,.26)',Math.max(.7,s*.018));
+      poly([[X+w*.18,Y+w*.02],[X+w*.48,Y+w*.21],[X+w*.18,Y+w*.38]],'rgba(255,255,255,.38)',null);poly([[X+w*.82,Y+w*.02],[X+w*.52,Y+w*.21],[X+w*.82,Y+w*.38]],'rgba(1,45,35,.27)',null);
+      poly([[X+w*.18,Y+w*.77],[X+w*.5,Y+w*.63],[X+w*.82,Y+w*.77],[X+w*.7,Y+w*.88],[X+w*.3,Y+w*.88]],'rgba(0,0,0,.16)',null);
+    } else {
+      rrc(c,X,Y,w,w*.9,rad,gemGrad);c.save();clipRound();
+      poly([[X+w*.08,Y+w*.18],[X+w*.34,Y+w*.08],[X+w*.48,Y+w*.48],[X+w*.22,Y+w*.64]],'rgba(255,255,255,.42)','rgba(255,255,255,.28)',Math.max(.5,s*.014));
+      poly([[X+w*.34,Y+w*.08],[X+w*.79,Y+w*.12],[X+w*.48,Y+w*.48]],'rgba(255,255,255,.23)',null);
+      poly([[X+w*.79,Y+w*.12],[X+w*.94,Y+w*.39],[X+w*.7,Y+w*.79],[X+w*.48,Y+w*.48]],'rgba(255,255,255,.13)','rgba(255,255,255,.19)',Math.max(.5,s*.012));
+      poly([[X+w*.22,Y+w*.64],[X+w*.48,Y+w*.48],[X+w*.7,Y+w*.79],[X+w*.4,Y+w*.9]],'rgba(0,0,0,.16)',null);
+      poly([[X+w*.48,Y+w*.48],[X+w*.94,Y+w*.39],[X+w*.7,Y+w*.79]],'rgba(255,255,255,.08)',null);
+      c.restore();
+    }
+    c.fillStyle='rgba(255,255,255,.9)';c.beginPath();c.ellipse(X+w*.25,Y+w*.2,Math.max(1,w*.065),Math.max(.8,w*.035),-.5,0,Math.PI*2);c.fill();
+  } else if (st === 'magma') {
+    const lava=c.createLinearGradient(X,Y,X+w,Y+w);lava.addColorStop(0,'#ffd16a');lava.addColorStop(.2,color);lava.addColorStop(.53,shade(color,-.22));lava.addColorStop(1,'#32172b');
+    rrc(c,X,Y+w*.07,w,w*.92,rad,'#241426');rrc(c,X,Y,w,w*.9,rad,lava);c.save();clipRound();
+    // Deep, branching cracks with an orange edge and a hot yellow core.
+    const cracks=[[[.18,.05],[.3,.25],[.22,.42],[.39,.58],[.31,.91]],[[.79,.02],[.65,.19],[.75,.34],[.58,.51],[.66,.73],[.52,.91]],[[.02,.68],[.2,.62],[.36,.7]],[[.42,.32],[.53,.25],[.61,.3]]];
+    cracks.forEach((path,i)=>{c.beginPath();path.forEach(([px,py],j)=>j?c.lineTo(X+w*px,Y+w*py):c.moveTo(X+w*px,Y+w*py));c.strokeStyle='rgba(255,106,31,.85)';c.lineWidth=Math.max(1.5,s*.055);c.lineJoin='round';c.stroke();c.strokeStyle='rgba(255,225,91,.9)';c.lineWidth=Math.max(.6,s*.018);c.stroke();});
+    poly([[X+w*.08,Y+w*.13],[X+w*.41,Y+w*.08],[X+w*.49,Y+w*.32],[X+w*.25,Y+w*.38]],'rgba(255,238,151,.23)',null);
+    c.restore();strokeRound(X+.5,Y+.5,w-1,w*.89,rad,'rgba(255,207,139,.32)',Math.max(.8,s*.02));
+  } else if (st === 'aurora') {
+    const a=c.createLinearGradient(X,Y,X+w,Y+w*.9);a.addColorStop(0,'#073e60');a.addColorStop(.3,color);a.addColorStop(.62,shade(color,-.2));a.addColorStop(1,'#242052');
+    rrc(c,X,Y+w*.07,w,w*.91,rad,'#080f2b');rrc(c,X,Y,w,w*.9,rad,a);c.save();clipRound();
+    const band=c.createLinearGradient(X,Y+w*.18,X+w,Y+w*.77);band.addColorStop(0,'rgba(89,255,215,0)');band.addColorStop(.34,'rgba(89,255,215,.65)');band.addColorStop(.58,'rgba(169,120,255,.52)');band.addColorStop(1,'rgba(255,112,212,0)');
+    c.strokeStyle=band;c.lineWidth=Math.max(2,s*.12);c.beginPath();c.moveTo(X-w*.1,Y+w*.7);c.bezierCurveTo(X+w*.14,Y+w*.05,X+w*.56,Y+w*.95,X+w*1.1,Y+w*.23);c.stroke();
+    c.strokeStyle='rgba(255,255,255,.37)';c.lineWidth=Math.max(.7,s*.02);c.beginPath();c.moveTo(X+w*.12,Y+w*.28);c.bezierCurveTo(X+w*.4,Y+w*.08,X+w*.68,Y+w*.46,X+w*.9,Y+w*.2);c.stroke();c.restore();
+    strokeRound(X+.5,Y+.5,w-1,w*.89,rad,'rgba(194,255,248,.48)',Math.max(.8,s*.02));
+  } else if (st === 'galaxy') {
+    const space=c.createLinearGradient(X,Y,X+w,Y+w);space.addColorStop(0,'#10112f');space.addColorStop(.42,shade(color,-.12));space.addColorStop(.75,'#21134f');space.addColorStop(1,'#070d25');
+    rrc(c,X,Y+w*.07,w,w*.91,rad,'#070b1a');rrc(c,X,Y,w,w*.9,rad,space);c.save();clipRound();
+    const swirl=c.createLinearGradient(X,Y,X+w,Y+w);swirl.addColorStop(0,'rgba(64,231,255,.08)');swirl.addColorStop(.48,'rgba(220,91,255,.52)');swirl.addColorStop(1,'rgba(255,184,107,.05)');
+    c.strokeStyle=swirl;c.lineWidth=Math.max(2,s*.1);c.beginPath();c.ellipse(X+w*.52,Y+w*.51,w*.34,w*.19,-.6,.15,Math.PI*1.85);c.stroke();
+    const stars=[[.2,.2],[.68,.2],[.79,.44],[.32,.67],[.58,.83],[.84,.74]]; stars.forEach(([sx,sy],i)=>{c.fillStyle=i%2?'rgba(255,255,255,.82)':'rgba(116,230,255,.9)';c.beginPath();c.arc(X+w*sx,Y+w*sy,Math.max(.7,s*(i%3===0?.035:.022)),0,Math.PI*2);c.fill();});
+    c.restore();strokeRound(X+.5,Y+.5,w-1,w*.89,rad,'rgba(196,168,255,.4)',Math.max(.8,s*.02));
+  } else if (st === 'stone') {
+    const rock=c.createLinearGradient(X,Y,X+w,Y+w);rock.addColorStop(0,shade(color,.28));rock.addColorStop(.45,color);rock.addColorStop(1,shade(color,-.38));
+    rrc(c,X,Y+w*.07,w,w*.91,rad,shade(color,-.45));rrc(c,X,Y,w,w*.9,rad,rock);c.save();clipRound();
+    poly([[X+w*.04,Y+w*.25],[X+w*.31,Y+w*.1],[X+w*.47,Y+w*.31],[X+w*.27,Y+w*.5]],'rgba(255,255,255,.17)','rgba(255,255,255,.14)',Math.max(.6,s*.015));
+    poly([[X+w*.47,Y+w*.31],[X+w*.92,Y+w*.13],[X+w*.78,Y+w*.54],[X+w*.54,Y+w*.68]],'rgba(0,0,0,.11)',null);
+    poly([[X+w*.08,Y+w*.76],[X+w*.27,Y+w*.52],[X+w*.54,Y+w*.68],[X+w*.68,Y+w*.9]],'rgba(255,255,255,.08)',null);
+    const flecks=[[.16,.54],[.38,.22],[.72,.31],[.83,.67],[.44,.83]];flecks.forEach(([fx,fy],i)=>{c.fillStyle=i%2?'rgba(255,255,255,.25)':'rgba(7,14,34,.22)';c.beginPath();c.arc(X+w*fx,Y+w*fy,Math.max(.55,w*.018),0,Math.PI*2);c.fill();});
+    c.strokeStyle='rgba(28,34,62,.44)';c.lineWidth=Math.max(.75,s*.02);c.beginPath();c.moveTo(X+w*.62,Y+w*.16);c.lineTo(X+w*.55,Y+w*.35);c.lineTo(X+w*.62,Y+w*.46);c.stroke();c.restore();
+    strokeRound(X+.5,Y+.5,w-1,w*.89,rad,'rgba(255,255,255,.3)',Math.max(.8,s*.02));
+  } else if (st === 'obsidian') {
+    const obs=c.createLinearGradient(X,Y,X+w,Y+w);obs.addColorStop(0,'#14162b');obs.addColorStop(.28,shade(color,-.18));obs.addColorStop(.62,'#19132d');obs.addColorStop(1,'#080d1a');
+    rrc(c,X,Y+w*.07,w,w*.91,rad,'#050914');rrc(c,X,Y,w,w*.9,rad,obs);c.save();clipRound();
+    poly([[X+w*.04,Y+w*.13],[X+w*.43,Y+w*.05],[X+w*.56,Y+w*.34],[X+w*.28,Y+w*.49]],'rgba(255,255,255,.19)','rgba(170,135,255,.25)',Math.max(.7,s*.018));
+    poly([[X+w*.43,Y+w*.05],[X+w*.96,Y+w*.2],[X+w*.75,Y+w*.55],[X+w*.56,Y+w*.34]],shade(color,-.14),'rgba(118,105,255,.32)',Math.max(.6,s*.016));
+    poly([[X+w*.28,Y+w*.49],[X+w*.56,Y+w*.34],[X+w*.75,Y+w*.55],[X+w*.53,Y+w*.92],[X+w*.16,Y+w*.81]],'rgba(62,44,105,.6)','rgba(72,209,255,.25)',Math.max(.6,s*.015));
+    c.restore();strokeRound(X+.5,Y+.5,w-1,w*.89,rad,'rgba(178,154,255,.52)',Math.max(.8,s*.022));
+  } else if (st === 'neon') {
+    const ng=c.createLinearGradient(X,Y,X+w,Y+w);ng.addColorStop(0,'rgba(255,255,255,.16)');ng.addColorStop(.5,color+'44');ng.addColorStop(1,'rgba(0,0,0,.35)');
+    rrc(c,X,Y,w,w*.9,rad,ng);c.strokeStyle=color;c.lineWidth=Math.max(1.4,s*.065);c.stroke();
+    if(q>=2){c.strokeStyle='rgba(255,255,255,.72)';c.lineWidth=Math.max(.7,s*.018);c.stroke();}
+    rrc(c,X+w*.18,Y+w*.18,w*.64,w*.55,rad*.7,shade(color,-.24));
+  } else if (st === 'pixel') {
+    c.fillStyle=shade(color,-.28);c.fillRect(X,Y+w*.06,w,w*.9);c.fillStyle=color;c.fillRect(X,Y,w,w*.9);
+    c.fillStyle='rgba(255,255,255,.34)';c.fillRect(X,Y,w,w*.13);c.fillRect(X,Y,w*.13,w*.9);
+    c.fillStyle='rgba(0,0,0,.24)';c.fillRect(X,Y+w*.78,w,w*.12);c.fillRect(X+w*.86,Y,w*.14,w*.9);
+    if(q>=2){c.fillStyle='rgba(255,255,255,.24)';c.fillRect(X+w*.22,Y+w*.22,w*.17,w*.17);}
+  } else if (st === 'jelly') {
+    rrc(c,X,Y+w*.06,w,w*.91,rad,shade(color,-.34));const jg=c.createRadialGradient(X+w*.32,Y+w*.22,w*.03,X+w*.54,Y+w*.5,w*.75);jg.addColorStop(0,shade(color,.55));jg.addColorStop(.48,color);jg.addColorStop(1,shade(color,-.22));
+    rrc(c,X+w*.025,Y+w*.015,w*.95,w*.89,rad,jg);c.save();clipRound();
+    c.fillStyle='rgba(255,255,255,.68)';c.beginPath();c.ellipse(X+w*.31,Y+w*.22,w*.2,w*.085,-.48,0,Math.PI*2);c.fill();
+    c.fillStyle='rgba(255,255,255,.2)';c.beginPath();c.ellipse(X+w*.7,Y+w*.72,w*.12,w*.05,-.5,0,Math.PI*2);c.fill();
+    c.restore();strokeRound(X+.5,Y+.5,w-1,w*.89,rad,'rgba(255,255,255,.42)',Math.max(.8,s*.02));
+  } else if (st === 'gem') {
+    rrc(c,X,Y,w,w*.9,rad,shade(color,-.35));const gr=c.createLinearGradient(X,Y,X+w,Y+w);gr.addColorStop(0,shade(color,.38));gr.addColorStop(.55,color);gr.addColorStop(1,shade(color,-.28));rrc(c,X,Y,w,w*.9,rad,gr);
+    poly([[X+w*.07,Y+w*.2],[X+w*.36,Y+w*.08],[X+w*.5,Y+w*.45],[X+w*.23,Y+w*.62]],'rgba(255,255,255,.35)',null);
+    poly([[X+w*.36,Y+w*.08],[X+w*.88,Y+w*.12],[X+w*.5,Y+w*.45]],'rgba(255,255,255,.17)',null);poly([[X+w*.5,Y+w*.45],[X+w*.88,Y+w*.12],[X+w*.82,Y+w*.67]],'rgba(255,255,255,.1)',null);
+  } else { // Caramelo: bloque lacado con base oscura y reflejo curvo.
+    rrc(c,X,Y+w*.08,w,w*.9,rad,shade(color,-.36));const gr=c.createLinearGradient(X,Y,X,Y+w);gr.addColorStop(0,shade(color,.35));gr.addColorStop(.48,color);gr.addColorStop(1,shade(color,-.18));rrc(c,X,Y,w,w*.9,rad,gr);
+    rrc(c,X+w*.12,Y+w*.08,w*.76,w*.2,rad*.5,'rgba(255,255,255,.4)');
+    if(q>=2){c.strokeStyle='rgba(255,255,255,.42)';c.lineWidth=Math.max(.8,s*.025);c.stroke();c.fillStyle='rgba(255,255,255,.9)';c.beginPath();c.arc(X+w*.22,Y+w*.19,w*.045,0,Math.PI*2);c.fill();}
+  }
+  if (q >= 2) {
+    // High-quality material pass: micro bevels and a crisp specular catch, baked into the cached sprite.
+    // It is rendered once per sprite (not per frame), so it adds detail without a continuous GPU cost.
+    c.save();
+    const hiPath = () => { c.beginPath(); c.roundRect ? c.roundRect(X + .8, Y + .8, w - 1.6, w * .9 - 1.6, Math.min(rad, s * .15)) : c.rect(X + .8, Y + .8, w - 1.6, w * .9 - 1.6); };
+    hiPath(); c.clip();
+    const spec = c.createLinearGradient(X, Y, X + w * .78, Y + w * .68);
+    spec.addColorStop(0, 'rgba(255,255,255,.16)');
+    spec.addColorStop(.18, 'rgba(255,255,255,.055)');
+    spec.addColorStop(.42, 'rgba(255,255,255,0)');
+    spec.addColorStop(1, 'rgba(0,0,0,.12)');
+    c.fillStyle = spec; c.fillRect(X, Y, w, w * .9);
+    // Tiny glint near the upper bevel gives the block a polished, tactile finish.
+    c.globalAlpha = .72;
+    c.fillStyle = '#ffffff';
+    c.beginPath(); c.ellipse(X + w * .19, Y + w * .105, Math.max(.8, w * .045), Math.max(.45, w * .014), -.34, 0, Math.PI * 2); c.fill();
+    c.globalAlpha = .34; c.fillStyle = '#a9eaff';
+    c.beginPath(); c.moveTo(X + w * .76, Y + w * .08); c.lineTo(X + w * .88, Y + w * .08); c.lineTo(X + w * .84, Y + w * .13); c.closePath(); c.fill();
+    c.restore();
+  }
+  if (largeGrid) {
+    // Borde de doble contraste para facilitar la lectura de las piezas.
+    c.save();c.lineWidth=Math.max(1.25,s*.026);c.strokeStyle='rgba(255,255,255,.66)';
+    c.beginPath();if(c.roundRect)c.roundRect(X+.5,Y+.5,w-1,w*.9-1,Math.min(s*.18,w*.2));else c.rect(X+.5,Y+.5,w-1,w*.9-1);c.stroke();
+    c.beginPath();if(c.roundRect)c.roundRect(X+2,Y+2,w-4,w*.9-4,Math.min(s*.15,w*.17));else c.rect(X+2,Y+2,w-4,w*.9-4);c.stroke();c.restore();
+    // Sculpted gloss: a crisp top bevel, a soft diagonal reflection and a darker lower lip.
+    c.save();
+    c.beginPath();if(c.roundRect)c.roundRect(X+.6,Y+.6,w-1.2,w*.9-1.2,Math.min(s*.16,w*.18));else c.rect(X+.6,Y+.6,w-1.2,w*.9-1.2);c.clip();
+    const bevel=c.createLinearGradient(X,Y,X+w*.78,Y+w*.88);
+    bevel.addColorStop(0,'rgba(255,255,255,.18)');bevel.addColorStop(.32,'rgba(255,255,255,.045)');bevel.addColorStop(.64,'rgba(255,255,255,0)');bevel.addColorStop(1,'rgba(0,0,0,.10)');
+    c.fillStyle=bevel;c.fillRect(X,Y,w,w*.9);
+    c.fillStyle='rgba(255,255,255,.32)';c.fillRect(X+w*.12,Y+w*.045,w*.46,Math.max(.7,s*.018));
+    c.fillStyle='rgba(0,0,0,.20)';c.fillRect(X+w*.1,Y+w*.865,w*.8,Math.max(.7,s*.018));
+    if(q>=1){
+      c.fillStyle='rgba(255,255,255,.58)';c.beginPath();c.moveTo(X+w*.08,Y+w*.1);c.lineTo(X+w*.15,Y+w*.1);c.lineTo(X+w*.1,Y+w*.17);c.closePath();c.fill();
+    }
+    c.restore();
+  }
+  c.restore();
+}
+// Caché de sprites: cada celda se pinta UNA sola vez (los brillos y sombras no se recalculan por fotograma).
+const sprites = new Map(); let spriteB = 0;
+const BLOCK_KIT_COLORS = ['red','orange','yellow','green','cyan','blue','purple','pink'];
+const blockKitImages = new Map();
+let blockKitRefreshScheduled = false;
+function refreshBlockKitArt() {
+  if (blockKitRefreshScheduled) return;
+  blockKitRefreshScheduled = true;
+  requestAnimationFrame(() => {
+    blockKitRefreshScheduled = false;
+    sprites.clear();
+    tSpr.clear();
+    Object.keys(thumbs).forEach(k => delete thumbs[k]);
+    redraw();
+    if (!shopEl.classList.contains('hidden')) renderShop();
+  });
+}
+function blockKitImage(skin, color) {
+  if (!skin || skin.assetSet !== 'blockPuzzleKit') return null;
+  const index = Math.max(0, skin.pal.indexOf(color));
+  const name = BLOCK_KIT_COLORS[index] || 'blue';
+  let image = blockKitImages.get(name);
+  if (!image) {
+    image = new Image();
+    blockKitImages.set(name, image);
+    image.onload = refreshBlockKitArt;
+    image.onerror = () => blockKitImages.delete(name);
+    image.src = new URL(`assets/themes/block-puzzle-kit-free/art/glossy/hd/${name}.png`, document.baseURI).href;
+  }
+  return image.complete && image.naturalWidth > 0 ? image : null;
+}
+function sprite(color) {
+  const B = Math.round(L.cell * dpr), st = SK().style, q = P.gfx;
+  if (B !== spriteB) { sprites.clear(); spriteB = B; }          // se reconstruye si cambia el tamaño
+  const largeGrid = (S.mode === 'lvl' || S.mode === 'inf') ? 'large' : 'standard';
+  const key = [SK().assetSet || 'procedural', st, color, q, largeGrid].join('|');
+  let sp = sprites.get(key);
+  if (!sp) {
+    const pad = cellPad(B, st, q), cvs = document.createElement('canvas');
+    cvs.width = cvs.height = B + pad * 2;
+    const c = cvs.getContext('2d');
+    const kitImage = blockKitImage(SK(), color);
+    if (kitImage) c.drawImage(kitImage, pad, pad, B, B);
+    else paintCell(c, pad, pad, B, color, st, q);
+    sp = { cvs, pad }; sprites.set(key, sp);
+  }
+  return sp;
+}
+function drawStoneObstacle(c,x,y,s,now,row,col) {
+  const p=s*.12, cx=x+s/2, cy=y+s/2, pulse=.5+.5*Math.sin(now/480+row*1.7+col);
+  c.save(); c.translate(x,y);
+  c.beginPath(); c.moveTo(s*.22,s*.12); c.lineTo(s*.58,s*.06); c.lineTo(s*.88,s*.28); c.lineTo(s*.82,s*.68); c.lineTo(s*.57,s*.9); c.lineTo(s*.18,s*.78); c.lineTo(s*.08,s*.43); c.closePath();
+  const g=c.createLinearGradient(0,0,s,s); g.addColorStop(0,'#dce5f2');g.addColorStop(.34,'#8796ad');g.addColorStop(.72,'#536178');g.addColorStop(1,'#29364b');
+  c.fillStyle=g;c.shadowColor='rgba(120,190,255,.28)';c.shadowBlur=s*.09;c.fill();c.shadowBlur=0;
+  c.strokeStyle='rgba(240,247,255,.8)';c.lineWidth=Math.max(1,s*.035);c.stroke();
+  c.beginPath();c.moveTo(s*.22,s*.12);c.lineTo(s*.43,s*.39);c.lineTo(s*.08,s*.43);c.moveTo(s*.43,s*.39);c.lineTo(s*.58,s*.06);c.moveTo(s*.43,s*.39);c.lineTo(s*.57,s*.9);c.moveTo(s*.43,s*.39);c.lineTo(s*.88,s*.28);c.moveTo(s*.43,s*.39);c.lineTo(s*.82,s*.68);
+  c.strokeStyle='rgba(255,255,255,.34)';c.lineWidth=Math.max(1,s*.018);c.stroke();
+  c.beginPath();c.moveTo(s*.58,s*.48);c.lineTo(s*.49,s*.59);c.lineTo(s*.56,s*.65);c.lineTo(s*.47,s*.77);c.strokeStyle=`rgba(255,211,140,${.42+.25*pulse})`;c.lineWidth=Math.max(1,s*.028);c.stroke();
+  c.restore();
+}
+function drawCell(x, y, s, color, alpha = 1) {
+  const sp = sprite(color), r = s / spriteB, o = sp.pad * r;
+  ctx.globalAlpha = alpha;
+  ctx.drawImage(sp.cvs, x - o, y - o, sp.cvs.width * r, sp.cvs.height * r);
+  ctx.globalAlpha = 1;
+}
+// Material motion uses one low-cost overlay over cached sprites instead of repainting every block each frame.
+function drawMaterialMotion(c, now, grid, x0, y0, cell, cols, rows, rowStart = 0) {
+  const skin = SK(), motion = skin.motion;
+  if (!motion || P.gfx < 1 || REDUCED || document.hidden) return;
+  const width = cols * cell, height = rows * cell;
+  c.save(); c.beginPath(); let any = false;
+  for (let y = 0; y < rows; y++) {
+    const row = grid[y + rowStart]; if (!row) continue;
+    for (let x = 0; x < cols; x++) if (row[x]) {
+      const xx = x0 + x * cell + cell * .045, yy = y0 + y * cell + cell * .035, ww = cell * .91, hh = cell * .9;
+      if (c.roundRect) c.roundRect(xx, yy, ww, hh, Math.max(1, cell * .12)); else c.rect(xx, yy, ww, hh);
+      any = true;
+    }
+  }
+  if (!any) { c.restore(); return; }
+  c.clip(); c.globalCompositeOperation = 'screen';
+  const periods = {neon:2900,jelly:3600,prism:4600,embers:3900,aurora:6500,stars:5200,metal:5000,obsidian:5400};
+  const phase = (now % (periods[motion] || 4600)) / (periods[motion] || 4600);
+  const head = x0 - width * .48 + phase * width * 1.96;
+  let tones;
+  if (motion === 'metal') tones = ['rgba(255,255,255,0)','rgba(255,255,255,.04)','rgba(255,255,255,.72)','rgba(255,255,255,.09)','rgba(255,255,255,0)'];
+  else if (motion === 'neon') tones = ['rgba(0,229,255,0)','rgba(0,229,255,.08)','rgba(255,255,255,.52)','rgba(255,61,129,.18)','rgba(255,61,129,0)'];
+  else if (motion === 'embers') tones = ['rgba(255,55,25,0)','rgba(255,77,20,.05)','rgba(255,220,80,.4)','rgba(255,85,20,.16)','rgba(255,55,25,0)'];
+  else if (motion === 'aurora') tones = ['rgba(45,240,213,0)','rgba(45,240,213,.08)','rgba(168,115,255,.3)','rgba(95,255,211,.14)','rgba(45,240,213,0)'];
+  else if (motion === 'stars') tones = ['rgba(105,110,255,0)','rgba(105,110,255,.07)','rgba(255,255,255,.38)','rgba(255,103,229,.17)','rgba(105,110,255,0)'];
+  else if (motion === 'obsidian') tones = ['rgba(114,92,255,0)','rgba(114,92,255,.08)','rgba(117,225,255,.26)','rgba(197,90,255,.18)','rgba(114,92,255,0)'];
+  else if (motion === 'jelly') tones = ['rgba(255,255,255,0)','rgba(255,255,255,.04)','rgba(255,255,255,.44)','rgba(255,255,255,.08)','rgba(255,255,255,0)'];
+  else tones = ['rgba(255,255,255,0)','rgba(79,255,223,.12)','rgba(255,255,255,.36)','rgba(255,125,218,.16)','rgba(255,255,255,0)'];
+  const band = c.createLinearGradient(head - width*.24, y0, head + width*.24, y0 + height);
+  tones.forEach((tone, i) => band.addColorStop(i / (tones.length - 1), tone));
+  c.globalAlpha = motion === 'metal' ? .46 : P.gfx >= 2 ? .34 : .21;
+  c.fillStyle = band; c.fillRect(x0, y0, width, height);
+  if (motion === 'stars' || motion === 'embers') {
+    // A few deterministic glints/embers drift per occupied cell; never spawn DOM particles.
+    c.globalAlpha = motion === 'stars' ? .5 : .35;
+    for (let y = 0; y < rows; y++) {
+      const row = grid[y + rowStart]; if (!row) continue;
+      for (let x = 0; x < cols; x++) if (row[x]) {
+        const seed = ((x + 3) * 17.17 + (y + rowStart + 1) * 31.73), pulse = (Math.sin(now / (motion === 'stars' ? 390 : 280) + seed) + 1) / 2;
+        if (pulse < .87) continue;
+        c.fillStyle = motion === 'stars' ? '#ffffff' : '#ffe5a0';
+        c.beginPath(); c.arc(x0 + (x + .25 + (seed % 50) / 100) * cell, y0 + (y + .24 + (seed % 37) / 100) * cell, Math.max(.8, cell * (motion === 'stars' ? .028 : .022) * pulse), 0, Math.PI * 2); c.fill();
+      }
+    }
+  }
+  c.restore();
+}
+function blockSkinMotionActive() {
+  // No keep-alive RAF on an empty board, in the menu, or while another mode is active.
+  return !!(SK().motion && P.gfx > 0 && !REDUCED && !document.hidden && !$('app').classList.contains('hidden') && $('home').classList.contains('hidden') && lastGame !== 'tet' && !S.over && S.grid.some(row => row.some(Boolean)));
+}
+const ROT_PATH = new Path2D('M20 12a8 8 0 11-2.4-5.7M20 4v5h-5');
+const colorOf = v => SK().pal[v - 1];
+function drawPiece(p, tx, ty, s, alpha = 1, force) {
+  p.cells.forEach(([y, x]) => drawCell(tx + x * s, ty + y * s, s, force || colorOf(p.color), alpha));
+}
+
+/* =====================================================================
+   GRÁFICOS · 3 niveles: Bajo · Medio · Alto  (se cambian en el menú → Gráficos)
+   ===================================================================== */
+// dpr = resolución máxima · part = partículas · cap = máximo simultáneo · lo demás = efectos que se activan
+const GFX = [
+  { name: 'Bajo',  dpr: 1.5, part: 0.35, cap: 90,  shake: 0, fire: 0,   zoom: 0, glow: 0, beams: 0, rings: 0, shine: 0, add: 0, vig: 0, light: 0,   guides: 0, sweep: 0,   edge: 0, fall: 0,  stagger: 0, ambient: 0 },
+  { name: 'Medio', dpr: 2,   part: 1,    cap: 260, shake: 1, fire: 1,   zoom: 0, glow: 0, beams: 0, rings: 1, shine: 0, add: 0, vig: 0, light: 0.4, guides: 0, sweep: 0.45, edge: 1, fall: 14, stagger: 1, ambient: 1 },
+  { name: 'Alto',  dpr: 3,   part: 1.6,  cap: 520, shake: 1, fire: 1.25, zoom: 1, glow: 1, beams: 1, rings: 1, shine: 1, add: 1, vig: 1, light: 0.72, guides: 1, sweep: 0.8, edge: 1, fall: 26, stagger: 1, ambient: 1 },
+];
+const GFX_INFO = ['Más fluido. Ideal para móviles antiguos o si notas lentitud.',
+                  'Equilibrado: buenos efectos y buen rendimiento.',
+                  'Máxima calidad: brillos, luces, sombras y muchas partículas.'];
+const isTouchSized = () => {
+  try { return matchMedia('(pointer: coarse)').matches || matchMedia('(max-width: 650px)').matches; }
+  catch (_) { return (window.innerWidth || 1024) <= 650; }
+};
+const autoGfx = () => {                                  // por defecto prima la fluidez en móviles
+  const mem = navigator.deviceMemory || 4, cores = navigator.hardwareConcurrency || 4;
+  if (mem <= 2 || cores <= 2) return 0;
+  if (isTouchSized()) return mem >= 8 && cores >= 8 ? 2 : 1;
+  return mem <= 3 || cores <= 3 ? 1 : 2;
+};
+if (!(P.gfx >= 0 && P.gfx <= 2)) P.gfx = autoGfx();
+// V22: muchas versiones anteriores guardaban "Alto" como selección automática en móviles.
+// Una sola migración baja ese valor a "Medio"; la elección manual posterior siempre se respeta.
+if (!P.gfxProfileV22) {
+  if (isTouchSized() && P.gfx === 2 && P.gfxUserChoice !== true) P.gfx = 1;
+  P.gfxProfileV22 = true;
+  save();
+}
+let G = GFX[P.gfx];
+
+const layerCache = {};                                   // capas dibujadas una sola vez (tablero, sprites de luz)
+function setGfx(i, say) {                                // aplica un nivel al instante, también en la partida en curso
+  P.gfx = i; if (say) P.gfxUserChoice = true; G = GFX[i]; save();
+  document.body.dataset.gfx = i;
+  sprites.clear(); tSpr.clear(); Object.keys(layerCache).forEach(k => delete layerCache[k]);
+  resize(); tetResize(); applyCfg();
+  document.querySelectorAll('.gfxcur').forEach(n => { n.textContent = G.name; });
+  if (say) toast('Gráficos: ' + G.name);
+  redraw();
+}
+
+/* ---------- Utilidades de luz ---------- */
+const ADD = () => (T.dark ? 'lighter' : 'source-over');  // en tema claro la luz aditiva no se vería
+const glowA = a => (T.dark ? a : a * 0.6);
+const rgbOf = hex => (/^#[0-9a-f]{6}$/i.test(hex) ? [1, 3, 5].map(i => parseInt(hex.substr(i, 2), 16)).join(',') : '255,255,255');
+const glows = {};
+function glowSprite(color) {                             // aureola suave precalculada
+  if (!glows[color]) {
+    const c = document.createElement('canvas'); c.width = c.height = 64;
+    const x = c.getContext('2d'), g = x.createRadialGradient(32, 32, 0, 32, 32, 32), rgb = rgbOf(color);
+    g.addColorStop(0, `rgba(${rgb},1)`); g.addColorStop(0.35, `rgba(${rgb},.5)`); g.addColorStop(1, `rgba(${rgb},0)`);
+    x.fillStyle = g; x.fillRect(0, 0, 64, 64); glows[color] = c;
+  }
+  return glows[color];
+}
+
+/* ---------- Tablero en caché: sombra, brillo y casillas vacías se dibujan UNA vez ---------- */
+function boardLayer(id, cols, rows, s, er, inset, dp) {
+  const q = P.gfx, frame = id === 'pz' ? 10 : 6, M = 22;
+  const key = [cols, rows, s, dp, q, T.board, T.cell, T.accent, er, inset, frame, P.skin, SK().style].join('|'), old = layerCache[id];
+  if (old && old.key === key) return old;
+  const bw = cols * s + frame * 2, bh = rows * s + frame * 2, cvs = document.createElement('canvas');
+  cvs.width = Math.ceil((bw + M * 2) * dp); cvs.height = Math.ceil((bh + M * 2) * dp);
+  const c = cvs.getContext('2d'); c.scale(dp, dp);
+  const path = (x, y, w, h, r) => { c.beginPath(); c.roundRect ? c.roundRect(x, y, w, h, r) : c.rect(x, y, w, h); };
+  // A cached, layered chassis: bottom extrusion, polished metallic rim and a deep glass well.
+  const frameTones = ({wood:['#b98550','#76502f','#33251e','#4a3024','#e0b77e'],metal:['#d7e1eb','#78899b','#253341','#536578','#eef5fb'],ice:['#c7f3ff','#4e92c5','#162b49','#315c85','#e5fcff'],stone:['#c3c9d4','#727b8b','#282e3b','#4d5667','#e9edf5'],magma:['#ffb36b','#9e3c38','#301c2a','#6a2b36','#ffe0a0'],emerald:['#68d5a7','#26785e','#122e31','#205e4c','#b5f6d7'],obsidian:['#b49aff','#5b4d9b','#1c1838','#40316c','#e2cfff'],neon:['#72f5ff','#1c83a7','#111c3b','#264e76','#ff77cc']})[SK().style] || ['#5878b7','#304779','#1a2a53','#293465','#6f5fae'];
+  const chassis = c.createLinearGradient(M, M, M + bw, M + bh);
+  chassis.addColorStop(0, frameTones[0]); chassis.addColorStop(.18, frameTones[1]); chassis.addColorStop(.52, frameTones[2]); chassis.addColorStop(.8, frameTones[3]); chassis.addColorStop(1, frameTones[4]);
+  rrc(c, M, M + 4, bw, bh, 20, 'rgba(3,7,22,.96)');
+  rrc(c, M, M, bw, bh, 20, chassis);
+  const inner = c.createLinearGradient(M, M, M + bw * .45, M + bh);
+  inner.addColorStop(0, '#17284a'); inner.addColorStop(.45, shade(T.board, -.08)); inner.addColorStop(1, '#10162f');
+  rrc(c, M + 2, M + 2, bw - 4, bh - 4, 18, inner);
+  c.save(); path(M + 2, M + 2, bw - 4, bh - 4, 18); c.clip();
+  // Static glass reflection; it is baked into the cache and costs no per-frame blur.
+  const gloss = c.createLinearGradient(M, M, M + bw * .62, M + bh * .56);
+  gloss.addColorStop(0, 'rgba(255,255,255,.20)'); gloss.addColorStop(.16, 'rgba(146,211,255,.08)'); gloss.addColorStop(.5, 'rgba(255,255,255,.015)'); gloss.addColorStop(1, 'rgba(255,255,255,0)');
+  c.fillStyle = gloss; c.fillRect(M, M, bw, bh);
+  // Subtle etched diagonal texture in the frame, not in front of the blocks.
+  c.strokeStyle = 'rgba(255,255,255,.035)'; c.lineWidth = 1;
+  for (let x = M - bh; x < M + bw; x += 18) { c.beginPath(); c.moveTo(x, M); c.lineTo(x + bh, M + bh); c.stroke(); }
+  c.restore();
+  // Crisp rails and accent perimeter remain visible even in the Low graphics profile.
+  path(M + .75, M + .75, bw - 1.5, bh - 1.5, 19); c.strokeStyle = 'rgba(255,255,255,.48)'; c.lineWidth = 1.5; c.stroke();
+  path(M + 4, M + 4, bw - 8, bh - 8, 16); c.strokeStyle = `rgba(${rgbOf(T.accent)},${q >= 2 ? .55 : .34})`; c.lineWidth = 1.3; c.stroke();
+  path(M + 7, M + 7, bw - 14, bh - 14, 13); c.strokeStyle = 'rgba(5,11,28,.66)'; c.lineWidth = 1.2; c.stroke();
+  // Four tiny lens catches make the corners feel machined rather than like a flat outline.
+  const corner = (x, y, sx, sy) => {
+    c.save(); c.translate(x, y); c.scale(sx, sy); c.strokeStyle = 'rgba(202,236,255,.72)'; c.lineWidth = 1.4; c.lineCap = 'round';
+    c.beginPath(); c.moveTo(0, 7); c.lineTo(0, 1); c.lineTo(7, 1); c.stroke();
+    c.fillStyle = '#86e8ff'; c.beginPath(); c.arc(3.5, 3.5, 1.2, 0, Math.PI * 2); c.fill(); c.restore();
+  };
+  corner(M + 5, M + 5, 1, 1); corner(M + bw - 5, M + 5, -1, 1); corner(M + 5, M + bh - 5, 1, -1); corner(M + bw - 5, M + bh - 5, -1, -1);
+  // Deep empty wells with alternating tone, glass lips and high-contrast separators.
+  for (let y = 0; y < rows; y++) for (let x = 0; x < cols; x++) {
+    const px = M + frame + x * s + inset, py = M + frame + y * s + inset, w = s - inset * 2;
+    const tint = ((x + y) & 1) ? -.095 : -.045;
+    const g = c.createLinearGradient(0, py, 0, py + w);
+    g.addColorStop(0, shade(T.cell, tint - .035)); g.addColorStop(.5, shade(T.cell, tint)); g.addColorStop(1, shade(T.cell, .015));
+    rrc(c, px, py + 1, w, w, er, 'rgba(3,7,23,.4)');
+    rrc(c, px, py, w, w, er, g);
+    c.save(); path(px + .35, py + .35, w - .7, w - .7, er); c.strokeStyle = 'rgba(255,255,255,.085)'; c.lineWidth = .7; c.stroke(); c.restore();
+    c.fillStyle = 'rgba(255,255,255,.13)'; c.fillRect(px + er * .65, py + er * .52, Math.max(0, w - er * 1.3), .85);
+    c.fillStyle = 'rgba(0,0,0,.2)'; c.fillRect(px + er * .65, py + w - 1, Math.max(0, w - er * 1.3), 1);
+    if (q >= 2) { c.fillStyle = 'rgba(112,202,255,.045)'; c.fillRect(px + w * .14, py + w * .16, w * .72, w * .68); }
+  }
+  return (layerCache[id] = { key, cvs, M, dp, frame });
+}
+function drawLayer(c, l, x0, y0) { c.drawImage(l.cvs, x0 - l.frame - l.M, y0 - l.frame - l.M, l.cvs.width / l.dp, l.cvs.height / l.dp); }
+
+/* ---------- Arena cinematográfica · marco vivo y bandeja de piezas ---------- */
+function drawArenaFrame(now) {
+  if (S.mode !== 'lvl' && S.mode !== 'inf') return;
+  const f = 10, x = L.x0 - f, y = L.y0 - f, w = L.bs + f * 2, h = L.bs + f * 2;
+  const pulse = .5 + .5 * Math.sin(now / 310), heat = S.streak >= 6 ? '#c39aff' : S.streak >= 3 ? '#ff8e75' : '#64dcff';
+  ctx.save();
+  const grad = ctx.createLinearGradient(x, y, x + w, y + h);
+  grad.addColorStop(0, '#8deaff'); grad.addColorStop(.28, '#5da7ff'); grad.addColorStop(.62, '#7c83ff'); grad.addColorStop(1, '#d09bff');
+  ctx.beginPath(); ctx.roundRect ? ctx.roundRect(x, y, w, h, 18) : ctx.rect(x, y, w, h);
+  ctx.strokeStyle = grad; ctx.globalAlpha = .12 + .08 * pulse; ctx.lineWidth = 7; ctx.stroke();
+  ctx.globalAlpha = .72; ctx.lineWidth = 1.35; ctx.strokeStyle = 'rgba(211,242,255,.84)'; ctx.stroke();
+  ctx.beginPath(); ctx.roundRect ? ctx.roundRect(x + 3, y + 3, w - 6, h - 6, 15) : ctx.rect(x + 3, y + 3, w - 6, h - 6);
+  ctx.globalAlpha = .18; ctx.lineWidth = 1; ctx.strokeStyle = heat; ctx.stroke();
+  // Traveling glint is rendered only when the existing gameplay loop is awake; no extra loop or particles.
+  const phase = (now % 1900) / 1900, gx = x + 18 + phase * Math.max(12, w - 36);
+  const glint = ctx.createLinearGradient(gx - 15, y - 1, gx + 15, y + 1);
+  glint.addColorStop(0, 'rgba(255,255,255,0)'); glint.addColorStop(.5, `rgba(255,255,255,${.32 + pulse * .32})`); glint.addColorStop(1, 'rgba(255,255,255,0)');
+  ctx.globalAlpha = .85; ctx.strokeStyle = glint; ctx.lineWidth = P.gfx >= 2 ? 2.8 : 2; ctx.beginPath(); ctx.moveTo(gx - 15, y + 1.2); ctx.lineTo(gx + 15, y + 1.2); ctx.stroke();
+  if (P.gfx >= 2 && !REDUCED) {
+    // Fine inner rails and corner glints add a premium machined-glass look with only a few strokes.
+    ctx.globalAlpha = .28 + pulse * .12; ctx.lineWidth = 1;
+    ctx.strokeStyle = '#9cecff';
+    ctx.beginPath(); ctx.roundRect ? ctx.roundRect(x + 4, y + 4, w - 8, h - 8, 14) : ctx.rect(x + 4, y + 4, w - 8, h - 8); ctx.stroke();
+    const sparkle = (px, py, r) => { ctx.beginPath(); ctx.moveTo(px-r,py); ctx.lineTo(px+r,py); ctx.moveTo(px,py-r); ctx.lineTo(px,py+r); ctx.stroke(); };
+    ctx.globalAlpha = .35 + pulse * .45; ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1.15;
+    sparkle(x + 7, y + 7, 3); sparkle(x + w - 7, y + 7, 3); sparkle(x + w - 7, y + h - 7, 2.5); sparkle(x + 7, y + h - 7, 2.5);
+  }
+  ctx.restore();
+}
+function drawTrayPanel(now) {
+  if (S.mode !== 'lvl' && S.mode !== 'inf') return;
+  const x = 6, y = L.trayY - 4, w = cw - 12, h = L.trayH + 5, r = Math.min(18, L.cell * .42);
+  ctx.save();
+  const base = ctx.createLinearGradient(x, y, x + w, y + h);
+  base.addColorStop(0, 'rgba(34,51,91,.88)'); base.addColorStop(.48, 'rgba(20,29,57,.88)'); base.addColorStop(1, 'rgba(12,18,40,.9)');
+  ctx.beginPath(); ctx.roundRect ? ctx.roundRect(x, y, w, h, r) : ctx.rect(x, y, w, h); ctx.fillStyle = base; ctx.fill();
+  ctx.beginPath(); ctx.roundRect ? ctx.roundRect(x + .6, y + .6, w - 1.2, h - 1.2, r - .5) : ctx.rect(x + .6, y + .6, w - 1.2, h - 1.2);
+  ctx.strokeStyle = 'rgba(191,224,255,.27)'; ctx.lineWidth = 1.2; ctx.stroke();
+  if (P.gfx >= 2) {
+    ctx.save(); ctx.beginPath(); ctx.roundRect ? ctx.roundRect(x + 1.5, y + 1.5, w - 3, h * .42, r - 1) : ctx.rect(x + 1.5, y + 1.5, w - 3, h * .42); ctx.clip();
+    const trayGloss = ctx.createLinearGradient(x, y, x, y + h * .42); trayGloss.addColorStop(0, 'rgba(255,255,255,.11)'); trayGloss.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = trayGloss; ctx.fillRect(x, y, w, h * .42); ctx.restore();
+  }
+  ctx.beginPath(); ctx.roundRect ? ctx.roundRect(x + 3, y + 3, w - 6, h - 6, r - 3) : ctx.rect(x + 3, y + 3, w - 6, h - 6); ctx.strokeStyle = 'rgba(255,255,255,.055)'; ctx.lineWidth = .8; ctx.stroke();
+  // Individual selection wells visually group the three pieces; held piece still uses the original pointer logic.
+  for (let i = 0; i < S.tray.length; i++) {
+    const sx = i * L.slotW + 4, sy = y + 5, sw = Math.max(1, L.slotW - 8), sh = Math.max(1, h - 10), held = !!(S.drag && S.drag.i === i);
+    ctx.beginPath(); ctx.roundRect ? ctx.roundRect(sx, sy, sw, sh, Math.min(13, r - 3)) : ctx.rect(sx, sy, sw, sh);
+    ctx.fillStyle = held ? 'rgba(104,232,255,.12)' : 'rgba(1,7,24,.15)'; ctx.fill();
+    ctx.strokeStyle = held ? 'rgba(126,238,255,.68)' : 'rgba(255,255,255,.055)'; ctx.lineWidth = held ? 1.4 : .7; ctx.stroke();
+    if (!held && S.tray[i]) {
+      ctx.fillStyle = 'rgba(255,255,255,.06)'; ctx.fillRect(sx + sw * .18, sy + 2, sw * .64, .8);
+    }
+  }
+  ctx.restore();
+}
+
+/* ---------- Efectos de luz (calidad Media y Alta) ---------- */
+function drawBeams(now) {                                // rayo de luz que recorre cada línea limpiada
+  if (!S.beams.length) return;
+  const s = L.cell, ex = s * 0.7, len = L.bs + ex * 2;
+  ctx.save(); ctx.globalCompositeOperation = ADD();
+  S.beams = S.beams.filter(b => {
+    const k = Math.max(0, (now - b.t) / 480); if (k >= 1) return false;
+    const e = 1 - Math.pow(1 - k, 3), a = Math.pow(1 - k, 1.3) * (T.dark ? 0.65 : 0.5), rgb = rgbOf(colorOf(b.color));
+    const th = s * (0.35 + 1.5 * e), cx = L.x0 + (b.i + 0.5) * s, cy = L.y0 + (b.i + 0.5) * s;
+    const g = b.row ? ctx.createLinearGradient(L.x0 - ex, 0, L.x0 - ex + len, 0) : ctx.createLinearGradient(0, L.y0 - ex, 0, L.y0 - ex + len);
+    g.addColorStop(0, `rgba(${rgb},0)`); g.addColorStop(0.15, `rgba(${rgb},${a})`); g.addColorStop(0.5, `rgba(255,255,255,${a})`);
+    g.addColorStop(0.85, `rgba(${rgb},${a})`); g.addColorStop(1, `rgba(${rgb},0)`);
+    ctx.fillStyle = g;
+    const R = t => (b.row ? ctx.fillRect(L.x0 - ex, cy - t / 2, len, t) : ctx.fillRect(cx - t / 2, L.y0 - ex, t, len));
+    ctx.globalAlpha = 0.45; R(th * 1.7); ctx.globalAlpha = 1; R(th * 0.55);
+    return true;
+  });
+  ctx.restore();
+}
+function drawRings(now) {                                // onda de choque circular (el radio nunca es negativo)
+  if (!S.rings.length) return;
+  ctx.save();
+  S.rings = S.rings.filter(r => {
+    const k = Math.max(0, (now - r.t) / r.dur); if (k >= 1) return false;
+    ctx.globalAlpha = (1 - k) * (T.dark ? 0.7 : 0.6); ctx.strokeStyle = r.color; ctx.lineWidth = Math.max(1, r.w * (1 - k));
+    ctx.beginPath(); ctx.arc(r.x, r.y, Math.max(0, r.max * (1 - Math.pow(1 - k, 3))), 0, 7); ctx.stroke();
+    return true;
+  });
+  ctx.restore();
+}
+/* ---------- Inmersión del tablero ---------- */
+const boardClip = (c, x, y, w, h) => { c.beginPath(); c.roundRect ? c.roundRect(x, y, w, h, 14) : c.rect(x, y, w, h); c.clip(); };
+function sweepBand(c, bx, by, bw, bh, k, str) {          // banda de luz diagonal que cruza el tablero
+  const e = k * k * (3 - 2 * k), pos = -bh * 0.3 + e * (bw + bh), a = Math.sin(Math.PI * k) * 0.17 * str * (T.dark ? 1 : 1.4);
+  c.save(); boardClip(c, bx, by, bw, bh);
+  const g = c.createLinearGradient(bx + pos - bh * 0.5, by, bx + pos + bh * 0.5, by + bh);
+  g.addColorStop(0, 'rgba(255,255,255,0)'); g.addColorStop(0.5, `rgba(255,255,255,${a.toFixed(3)})`); g.addColorStop(1, 'rgba(255,255,255,0)');
+  c.globalCompositeOperation = ADD(); c.fillStyle = g; c.fillRect(bx, by, bw, bh); c.restore();
+}
+function drawSweep(now) {
+  if (!S.sweep || !G.sweep) return;
+  const k = Math.max(0, (now - S.sweep.t) / 950);
+  if (k >= 1) { S.sweep = null; return; }
+  sweepBand(ctx, L.x0 - 6, L.y0 - 6, L.bs + 12, L.bs + 12, k, G.sweep);
+}
+function drawEdge(now) {                                 // el borde del tablero se enciende con el color de la pieza colocada
+  if (!S.edge || !G.edge) return;
+  const k = Math.max(0, (now - S.edge.t) / 520);
+  if (k >= 1) { S.edge = null; return; }
+  ctx.save(); ctx.strokeStyle = S.edge.color; ctx.beginPath();
+  ctx.roundRect ? ctx.roundRect(L.x0 - 6, L.y0 - 6, L.bs + 12, L.bs + 12, 14) : ctx.rect(L.x0 - 6, L.y0 - 6, L.bs + 12, L.bs + 12);
+  ctx.globalAlpha = (1 - k) * 0.22; ctx.lineWidth = 12; ctx.stroke();
+  ctx.globalAlpha = (1 - k) * 0.6; ctx.lineWidth = 2.5; ctx.stroke(); ctx.restore();
+}
+function drawBoardLight(now, tgt) {                      // el tablero se ilumina bajo la pieza que arrastras
+  if (!G.light || !tgt) return;
+  const s = L.cell, p = tgt.p, cx = L.x0 + (tgt.c + p.w / 2) * s, cy = L.y0 + (tgt.r + p.h / 2) * s, R = s * (3.2 + Math.max(p.w, p.h) * 0.6);
+  const a = (tgt.ok ? 0.32 : 0.14) * G.light * (T.dark ? 1 : 0.8) * (0.9 + 0.1 * Math.sin(now / 160)), rgb = rgbOf(colorOf(p.color));
+  ctx.save(); boardClip(ctx, L.x0 - 6, L.y0 - 6, L.bs + 12, L.bs + 12); ctx.globalCompositeOperation = ADD();
+  const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, R);
+  g.addColorStop(0, `rgba(${rgb},${a.toFixed(3)})`); g.addColorStop(1, `rgba(${rgb},0)`);
+  ctx.fillStyle = g; ctx.fillRect(L.x0 - 6, L.y0 - 6, L.bs + 12, L.bs + 12); ctx.restore();
+}
+function drawGuides(tgt) {                               // fila y columna de destino resaltadas (ayudan a apuntar) — Alto
+  if (!G.guides || !tgt) return;
+  const s = L.cell, p = tgt.p, r0 = Math.max(0, tgt.r), r1 = Math.min(S.n, tgt.r + p.h), c0 = Math.max(0, tgt.c), c1 = Math.min(S.n, tgt.c + p.w);
+  ctx.save(); ctx.fillStyle = T.dark ? 'rgba(255,255,255,.045)' : 'rgba(70,90,255,.05)';
+  if (r1 > r0) ctx.fillRect(L.x0, L.y0 + r0 * s, L.bs, (r1 - r0) * s);
+  if (c1 > c0) ctx.fillRect(L.x0 + c0 * s, L.y0, (c1 - c0) * s, L.bs);
+  ctx.restore();
+}
+function drawHeat(now) {                                 // viñeta cálida en los bordes mientras dura la racha (Alto)
+  if (!G.vig || S.streak < 2 || S.over || !CONFIG.COMBO_GLOW) return;
+  const hot = S.streak >= 6 ? '180,107,255' : S.streak >= 4 ? '255,77,109' : '255,150,40';
+  const a = Math.min(0.22, 0.05 * S.streak) * (0.85 + 0.15 * Math.sin(now / 220));
+  const g = ctx.createRadialGradient(cw / 2, chh * 0.5, Math.min(cw, chh) * 0.25, cw / 2, chh * 0.5, Math.max(cw, chh) * 0.75);
+  g.addColorStop(0, `rgba(${hot},0)`); g.addColorStop(1, `rgba(${hot},${a.toFixed(3)})`);
+  ctx.fillStyle = g; ctx.fillRect(0, 0, cw, chh);
+  ctx.save(); ctx.globalCompositeOperation = 'destination-out';      // difumina arriba y abajo: sin bordes duros
+  const f = Math.min(48, chh * 0.1);
+  let m = ctx.createLinearGradient(0, 0, 0, f); m.addColorStop(0, 'rgba(0,0,0,1)'); m.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = m; ctx.fillRect(0, 0, cw, f);
+  m = ctx.createLinearGradient(0, chh - f, 0, chh); m.addColorStop(0, 'rgba(0,0,0,0)'); m.addColorStop(1, 'rgba(0,0,0,1)');
+  ctx.fillStyle = m; ctx.fillRect(0, chh - f, cw, f); ctx.restore();
+}
+function drawRays(cy, k) {                               // rayos de luz detrás de los mensajes grandes (Alto)
+  const n = 12, R = L.bs * 0.62, al = Math.sin(Math.PI * Math.min(1, Math.max(0, k) * 1.05)) * (T.dark ? 0.26 : 0.2);
+  ctx.save(); ctx.globalCompositeOperation = ADD(); ctx.translate(cw / 2, cy); ctx.rotate(k * 1.3);
+  const g = ctx.createRadialGradient(0, 0, 0, 0, 0, R);
+  g.addColorStop(0, `rgba(255,226,130,${al})`); g.addColorStop(1, 'rgba(255,190,70,0)');
+  ctx.fillStyle = g;
+  for (let i = 0; i < n; i++) { ctx.beginPath(); ctx.moveTo(0, 0); ctx.arc(0, 0, R, i * 2 * Math.PI / n, i * 2 * Math.PI / n + Math.PI / n * 0.62); ctx.closePath(); ctx.fill(); }
+  ctx.restore();
+}
+
+/* ---------- Partículas Kenney + fallback procedural ---------- */
+const KENNEY_PARTICLE_FILES = Object.freeze({
+  circle: 'circle_02.png',
+  smoke: 'smoke_03.png',
+  flame: 'flame_03.png',
+  flare: 'flare_01.png',
+  spark: 'spark_01.png',
+  star: 'star_01.png',
+  magic: 'magic_01.png',
+  trace: 'trace_03.png'
+});
+const KENNEY_PARTICLE_IMAGES = Object.create(null);
+function kenneyParticleImage(key) {
+  const file = KENNEY_PARTICLE_FILES[key];
+  if (!file || typeof Image === 'undefined') return null;
+  let img = KENNEY_PARTICLE_IMAGES[key];
+  if (!img) {
+    img = new Image();
+    img.decoding = 'async';
+    img.src = 'assets/kenney-particles/' + file;
+    KENNEY_PARTICLE_IMAGES[key] = img;
+  }
+  return img.complete && img.naturalWidth > 0 ? img : null;
+}
+function drawKenneyParticle(target, key, x, y, w, h, rotation = 0, alpha = 1, additive = false) {
+  const img = kenneyParticleImage(key);
+  if (!img) return false;
+  target.save();
+  if (additive) target.globalCompositeOperation = ADD();
+  target.globalAlpha = Math.max(0, Math.min(1, alpha));
+  target.translate(x, y);
+  if (rotation) target.rotate(rotation);
+  target.drawImage(img, -w / 2, -h / 2, w, h);
+  target.restore();
+  return true;
+}
+// Start loading a small curated subset asynchronously; no external URLs or per-frame DOM nodes.
+['circle','smoke','flame','flare','spark','star','magic','trace'].forEach(kenneyParticleImage);
+
+function burst(x, y, color, n, spd) {                 // impactos, colocación y limpieza de bloques
+  if (REDUCED) return;
+  n = Math.round(n * CONFIG.PARTICLES * G.part);
+  const s = L.cell, t = performance.now();
+  for (let i = 0; i < n && S.parts.length < G.cap; i++) {
+    const a = Math.random() * 6.283, v = s * (2 + Math.random() * spd);
+    const shape = G.add && i % 4 === 3 ? 3 : i % 3;
+    const sprite = shape === 3 ? 'flare' :
+      shape === 0 ? (n >= 8 && i % 5 === 0 ? 'smoke' : 'circle') :
+      shape === 1 ? (i % 2 === 0 ? 'star' : 'magic') :
+      (i % 2 === 0 ? 'spark' : 'trace');
+    S.parts.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - s * 2, rot: Math.random() * 6,
+      vr: (Math.random() - 0.5) * 12, sz: s * (0.1 + Math.random() * 0.14), color, t,
+      life: 600 + Math.random() * 600, shape, sprite });
+  }
+}
+function confetti(n) {                                  // premios, niveles y tablero limpio
+  if (REDUCED) return;
+  n = Math.round(n * CONFIG.PARTICLES * G.part);
+  const s = L.cell, pal = SK().pal, t = performance.now();
+  for (let i = 0; i < n && S.parts.length < G.cap + 60; i++) {
+    const shape = Math.random() < 0.3 ? 1 : 2;
+    S.parts.push({ x: L.x0 + Math.random() * L.bs, y: L.y0 - s * Math.random(),
+      vx: (Math.random() - 0.5) * s * 4, vy: s * (1 + Math.random() * 4), rot: Math.random() * 6,
+      vr: (Math.random() - 0.5) * 14, sz: s * (0.12 + Math.random() * 0.1),
+      color: pal[Math.floor(Math.random() * pal.length)], t, life: 1500 + Math.random() * 1000,
+      shape, sprite: Math.random() < 0.5 ? 'star' : (Math.random() < 0.5 ? 'magic' : 'spark') });
+  }
+}
+function drawParticles(now, dt) {
+  const s = L.cell;
+  S.parts = S.parts.filter(p => {
+    const k = (now - p.t) / p.life;
+    if (k >= 1) return false;
+    p.vy += s * 16 * dt * (p.g === undefined ? 1 : p.g); p.x += p.vx * dt; p.y += p.vy * dt; p.rot += p.vr * dt;
+    if (p.shape === 3) {                                // destellos aditivos: textura Kenney con fallback original
+      const sz = p.sz * 3 * (1 - 0.4 * k);
+      if (!drawKenneyParticle(ctx, p.sprite || 'flare', p.x, p.y, sz * 2, sz * 2, p.rot,
+          glowA(0.65) * (1 - k), true)) {
+        ctx.save(); ctx.globalCompositeOperation = ADD(); ctx.globalAlpha = glowA(0.65) * (1 - k);
+        ctx.drawImage(glowSprite(p.color), p.x - sz, p.y - sz, sz * 2, sz * 2); ctx.restore();
+      }
+      return true;
+    }
+    const spriteSize = p.sz * (p.shape === 1 ? 3.8 : p.shape === 2 ? 3.5 : 2.8);
+    if (drawKenneyParticle(ctx, p.sprite || 'spark', p.x, p.y, spriteSize, spriteSize, p.rot, 1 - k * k, false)) return true;
+    // Procedural fallback remains in place if an image is not ready or fails to load.
+    ctx.save(); ctx.globalAlpha = 1 - k * k; ctx.fillStyle = p.color;
+    ctx.translate(p.x, p.y); ctx.rotate(p.rot); ctx.beginPath();
+    if (p.shape === 0) ctx.arc(0, 0, p.sz, 0, 7);
+    else if (p.shape === 1) {
+      const z = p.sz * 1.5;
+      ctx.moveTo(0, -z); ctx.quadraticCurveTo(0, 0, z, 0); ctx.quadraticCurveTo(0, 0, 0, z);
+      ctx.quadraticCurveTo(0, 0, -z, 0); ctx.quadraticCurveTo(0, 0, 0, -z);
+    } else ctx.rect(-p.sz, -p.sz * 0.5, p.sz * 2, p.sz);
+    ctx.fill(); ctx.restore();
+    return true;
+  });
+}
+
+/* ---------- Fuego de racha: llamas que suben desde el borde del tablero ---------- */
+// [núcleo, medio, borde transparente] por etapa de vida (joven → apagándose); 3 tonos según la racha
+const FIRE_COL = [
+  [['rgba(255,250,200,1)', 'rgba(255,196,60,.85)', 'rgba(255,140,20,0)'], ['rgba(255,214,100,.95)', 'rgba(255,130,30,.75)', 'rgba(230,60,20,0)'], ['rgba(255,140,60,.7)', 'rgba(220,50,30,.45)', 'rgba(120,20,20,0)']],
+  [['rgba(255,240,245,1)', 'rgba(255,110,160,.85)', 'rgba(255,50,100,0)'], ['rgba(255,160,190,.95)', 'rgba(255,60,110,.75)', 'rgba(200,30,70,0)'], ['rgba(255,90,120,.7)', 'rgba(190,30,80,.45)', 'rgba(90,10,50,0)']],
+  [['rgba(240,235,255,1)', 'rgba(170,120,255,.85)', 'rgba(110,70,255,0)'], ['rgba(200,170,255,.95)', 'rgba(130,80,255,.75)', 'rgba(70,40,200,0)'], ['rgba(140,100,255,.7)', 'rgba(80,50,200,.45)', 'rgba(30,20,100,0)']],
+];
+const flameSp = {};                                   // sprites: se pintan una vez y se reutilizan
+function flameSprite(tier, stage) {
+  const key = tier * 3 + stage;
+  if (!flameSp[key]) {
+    const c = document.createElement('canvas'); c.width = c.height = 64;
+    const x = c.getContext('2d'), col = FIRE_COL[tier][stage], g = x.createRadialGradient(32, 38, 2, 32, 32, 30);
+    g.addColorStop(0, col[0]); g.addColorStop(0.45, col[1]); g.addColorStop(1, col[2]);
+    x.fillStyle = g; x.fillRect(0, 0, 64, 64);
+    flameSp[key] = c;
+  }
+  return flameSp[key];
+}
+function drawFire(now, dt) {
+  const s = L.cell, tier = S.streak >= 6 ? 2 : S.streak >= 4 ? 1 : 0;
+  if (CONFIG.FIRE && G.fire > 0 && !REDUCED && S.streak >= 2 && !S.over) {
+    S.fireAcc += (35 + 16 * Math.min(S.streak, 8)) * CONFIG.FIRE_AMOUNT * G.fire * dt;   // más racha = más fuego
+    const bx = L.x0 - 6, by = L.y0 - 6, bw = L.bs + 12, bh = L.bs + 12;
+    while (S.fireAcc >= 1) {
+      S.fireAcc--;
+      if (S.flames.length > 110 * CONFIG.FIRE_AMOUNT * G.fire) continue;
+      const r = Math.random(); let x, y;
+      if (r < 0.4) { x = bx + 6 + Math.random() * (bw - 12); y = by + bh - 8; }          // base del tablero
+      else if (r < 0.6) { x = bx + 4; y = by + bh * (0.4 + Math.random() * 0.6); }        // lateral izquierdo
+      else if (r < 0.8) { x = bx + bw - 4; y = by + bh * (0.4 + Math.random() * 0.6); }   // lateral derecho
+      else { x = bx + 6 + Math.random() * (bw - 12); y = by + 6; }                        // borde superior
+      S.flames.push({ x, y, vx: (Math.random() - 0.5) * s * 0.8, vy: -s * (1.8 + Math.random() * 2.2),
+        sz: s * (0.5 + Math.random() * 0.55), t: now, life: 520 + Math.random() * 420, ph: Math.random() * 6.28, tier });
+      if (Math.random() < 0.18 && S.parts.length < G.cap)                                    // chispas que suben
+        S.parts.push({ x, y, vx: (Math.random() - 0.5) * s * 2, vy: -s * (3 + Math.random() * 3), g: -0.2,
+          rot: 0, vr: 0, sz: s * 0.05 + Math.random() * s * 0.04, color: '#ffd27a', t: now,
+          life: 700 + Math.random() * 500, shape: 0, sprite: 'spark' });
+    }
+  }
+  if (!S.flames.length) return;
+  ctx.save(); ctx.globalCompositeOperation = T.dark ? 'lighter' : 'source-over';   // brillo aditivo en tema oscuro
+  S.flames = S.flames.filter(f => {
+    const age = now - f.t, k = age / f.life;
+    if (k >= 1) return false;
+    f.x += (f.vx + Math.sin(age / 90 + f.ph) * s * 0.6) * dt; f.y += f.vy * dt;     // sube ondulando
+    const w = f.sz * (1 - 0.6 * k), h = w * 1.5;                                      // se afina al subir
+    const alpha = k < 0.15 ? k / 0.15 : 1 - Math.max(0, (k - 0.5) / 0.5);
+    if (!drawKenneyParticle(ctx, 'flame', f.x, f.y - h * 0.2, w, h, Math.sin(age / 130 + f.ph) * 0.08, alpha, true)) {
+      ctx.globalAlpha = alpha;
+      ctx.drawImage(flameSprite(f.tier, k < 0.3 ? 0 : k < 0.65 ? 1 : 2), f.x - w / 2, f.y - h * 0.7, w, h);
+    }
+    return true;
+  });
+  ctx.restore();
+}
+
+/* ---------- Textos animados (elogios, puntos, nivel) ---------- */
+function drawBadge(text, cy, size, stops, k) {
+  const pop = k < 0.2 ? easeOutBack(k / 0.2) : 1, alpha = k > 0.75 ? 1 - (k - 0.75) / 0.25 : 1;
+  const font = z => `900 ${z}px "Avenir Next","Trebuchet MS",system-ui,sans-serif`;
+  ctx.save(); ctx.translate(cw / 2, cy); ctx.scale(pop, pop);
+  ctx.rotate(Math.sin(k * 10) * 0.04 * (1 - k)); ctx.globalAlpha = Math.max(0, alpha);
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.lineJoin = 'round';
+  ctx.font = font(size);
+  let m = ctx.measureText(text).width + size * 0.4;
+  if (m > cw * 0.9) { size *= cw * 0.9 / m; m = cw * 0.9; ctx.font = font(size); }
+  ctx.lineWidth = size * 0.2; ctx.strokeStyle = 'rgba(45,20,90,.88)'; ctx.strokeText(text, 0, 0);
+  const g = stops.length > 2 ? ctx.createLinearGradient(-m / 2, 0, m / 2, 0) : ctx.createLinearGradient(0, -size / 2, 0, size / 2);
+  stops.forEach((c, i) => g.addColorStop(i / (stops.length - 1), c));
+  if (G.glow) { ctx.shadowColor = stops[0]; ctx.shadowBlur = size * 0.35; }          // brillo del texto (Alto)
+  ctx.fillStyle = g; ctx.fillText(text, 0, 0);
+  ctx.restore();
+}
+function drawPopup(p, k, s) {
+  const mid = L.y0 + L.bs * 0.42;
+  if (p.kind === 'praise') {
+    if (G.glow && p.tier >= 3 && !REDUCED) drawRays(mid - k * s * 0.8, k);
+    drawBadge(PRAISE[p.tier - 1], mid - k * s * 0.8, s * Math.min(1.9, 0.85 + 0.15 * p.tier), PRAISE_COL[p.tier - 1], k);
+  }
+  else if (p.kind === 'score') {
+    drawBadge(p.text, mid + s * 1.5 - k * s * 0.8, s * 0.7, ['#ffffff', '#dfe6ff'], k);
+    if (p.sub) drawBadge(p.sub, mid + s * 2.3 - k * s * 0.8, s * 0.42, ['#ffe66d', '#ffb02e'], k);
+  } else drawBadge(p.text, mid - s * 2.6 - k * s * 0.6, s * 0.8, [T.accent, T.accent], k);
+}
+
+/* ---------- Escena completa ---------- */
+function dropTarget() {
+  const d = S.drag, p = S.tray[d.i];
+  const tx = d.x - p.w * L.cell / 2;
+  const ty = d.y - CONFIG.DRAG_OFFSET_CELLS * L.cell - p.h * L.cell / 2;
+  const c = Math.round((tx - L.x0) / L.cell), r = Math.round((ty - L.y0) / L.cell);
+  return { p, tx, ty, r, c, ok: canPlace(p, r, c) };
+}
+
+function draw(now) {
+  const dt = Math.min(0.05, (now - (S.last || now)) / 1000); S.last = now;
+  ctx.clearRect(0, 0, cw, chh);
+  drawHeat(now);                                                // viñeta cálida de racha (Alto)
+  ctx.save();
+  if (S.shake) {                                                // temblor de pantalla
+    const k = Math.max(0, (now - S.shake.t) / 380);
+    if (k >= 1) S.shake = null;
+    else { const m = S.shake.mag * (1 - k) * (1 - k); ctx.translate((Math.random() - 0.5) * 2 * m, 0); }
+  }
+  if (S.zoom) {                                                 // golpe de cámara al limpiar (Alto)
+    const k = Math.max(0, (now - S.zoom.t) / 340);
+    if (k >= 1) S.zoom = null;
+    else { const sc = 1 + S.zoom.mag * (1 - k) * (1 - k), zx = cw / 2, zy = L.y0 + L.bs / 2; ctx.translate(zx, zy); ctx.scale(sc, sc); ctx.translate(-zx, -zy); }
+  }
+  const n = S.n, s = L.cell, er = s * SK().r;
+
+  // Tablero, brillo y casillas vacías: capa en caché (se dibuja una sola vez)
+  drawLayer(ctx, boardLayer('pz', n, n, s, er, 0.8, dpr), L.x0, L.y0);
+  drawArenaFrame(now);
+  // Resplandor del borde mientras dura la racha
+  if (CONFIG.COMBO_GLOW && G.fire > 0 && S.streak >= 2 && !S.over) {
+    const hot = S.streak >= 6 ? '#b46bff' : S.streak >= 4 ? '#ff4d6d' : '#ffb02e';
+    const pulse = 0.55 + 0.45 * Math.sin(now / 180);
+    ctx.save(); ctx.strokeStyle = hot; ctx.beginPath();
+    ctx.roundRect ? ctx.roundRect(L.x0 - 6, L.y0 - 6, L.bs + 12, L.bs + 12, 14) : ctx.rect(L.x0 - 6, L.y0 - 6, L.bs + 12, L.bs + 12);
+    ctx.globalAlpha = 0.16 + 0.12 * pulse; ctx.lineWidth = 9 + S.streak * 1.5; ctx.stroke();   // halo (más barato que blur)
+    ctx.globalAlpha = 0.55 + 0.4 * pulse; ctx.lineWidth = 3; ctx.stroke();
+    ctx.restore();
+  }
+
+  // Celdas (el fondo vacío viene de la capa en caché). Rebote y destello al colocar.
+  S.placed = S.placed.filter(p => now - p.t < 560);
+  const pm = new Map(S.placed.map(p => [p.y * n + p.x, p]));
+  for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) {
+    const v = S.grid[y][x]; if (!v) continue;
+    const px = L.x0 + x * s, py = L.y0 + y * s, pe = pm.get(y * n + x), kp = pe ? (now - pe.t) / 220 : 2;
+    if (S.stones?.[y]?.[x]) { drawStoneObstacle(ctx,px,py,s,now,y,x); continue; }
+    if (kp < 1) {
+      const sc = 1 + 0.18 * Math.sin(Math.PI * kp), off = s * (1 - sc) / 2;
+      drawCell(px + off, py + off, s * sc, colorOf(v));
+    } else drawCell(px, py, s, colorOf(v));
+    if (pe && G.shine) {                                        // brillo que recorre la pieza recién puesta
+      const ks = (now - pe.t - (pe.d || 0)) / 280;
+      if (ks > 0 && ks < 1) rr(px + 2, py + 2, s - 4, s - 4, er, `rgba(255,255,255,${(Math.sin(Math.PI * ks) * 0.6).toFixed(3)})`);
+    }
+  }
+  drawMaterialMotion(ctx, now, S.grid, L.x0, L.y0, s, n, n); // destellos animados de skins premium
+
+  // Fantasma + líneas que se limpiarían (pulsan)
+  let tgt = null;
+  const dragOn = S.drag && S.tray[S.drag.i] && !(S.tool === 'rotate' && !S.drag.moved);   // en modo girar, un toque no levanta la pieza
+  if (dragOn) {
+    tgt = dropTarget();
+    if (tgt.ok) {
+      const g2 = S.grid.map(r => r.slice());
+      tgt.p.cells.forEach(([y, x]) => g2[tgt.r + y][tgt.c + x] = tgt.p.color);
+      const { rows, cols } = fullLines(g2), col = colorOf(tgt.p.color), pulse = 0.6 + 0.4 * Math.sin(now / 110);
+      for (let y = 0; y < n; y++) for (let x = 0; x < n; x++)
+        if (rows.includes(y) || cols.includes(x)) drawCell(L.x0 + x * s, L.y0 + y * s, s, col, 0.55);
+      drawPiece(tgt.p, L.x0 + tgt.c * s, L.y0 + tgt.r * s, s, 0.4);
+      if (rows.length + cols.length) {
+        ctx.save(); ctx.strokeStyle = col;
+        const line = (x, y, w, h) => {
+          ctx.beginPath(); ctx.roundRect ? ctx.roundRect(x, y, w, h, s * 0.25) : ctx.rect(x, y, w, h);
+          ctx.globalAlpha = 0.25 * pulse; ctx.lineWidth = 8; ctx.stroke();                 // halo
+          ctx.globalAlpha = pulse; ctx.lineWidth = 3; ctx.stroke();
+        };
+        rows.forEach(y => line(L.x0 + 1, L.y0 + y * s + 1, L.bs - 2, s - 2));
+        cols.forEach(x => line(L.x0 + x * s + 1, L.y0 + 1, s - 2, L.bs - 2));
+        ctx.restore();
+      }
+    }
+  }
+
+  drawGuides(tgt); drawBoardLight(now, tgt);                    // iluminación inmersiva del tablero
+  drawSweep(now); drawEdge(now);
+
+  // Herramienta Bomba: zona que se va a limpiar + ayuda
+  if (S.tool === 'bomb' && !S.over) {
+    const b = S.bomb, rad = CONFIG.BOMB_RADIUS, pulse = 0.5 + 0.5 * Math.sin(now / 150);
+    if (b) {
+      const x0 = Math.max(0, b.x - rad), x1 = Math.min(n - 1, b.x + rad), y0 = Math.max(0, b.y - rad), y1 = Math.min(n - 1, b.y + rad);
+      ctx.save(); ctx.beginPath();
+      ctx.roundRect ? ctx.roundRect(L.x0 + x0 * s + 1, L.y0 + y0 * s + 1, (x1 - x0 + 1) * s - 2, (y1 - y0 + 1) * s - 2, s * 0.25)
+                    : ctx.rect(L.x0 + x0 * s, L.y0 + y0 * s, (x1 - x0 + 1) * s, (y1 - y0 + 1) * s);
+      ctx.fillStyle = `rgba(255,70,70,${0.2 + 0.14 * pulse})`; ctx.fill();
+      ctx.strokeStyle = '#ff4646'; ctx.lineWidth = 3; ctx.stroke(); ctx.restore();
+    }
+    ctx.save();
+    const locale = (document.documentElement.lang || 'es').toLowerCase().slice(0, 2);
+    const hint = locale === 'en' ? 'BOMB · TAP A CELL'
+      : locale === 'it' ? 'BOMBA · TOCCA UNA CELLA'
+      : locale === 'fr' ? 'BOMBE · TOUCHE UNE CASE'
+      : 'BOMBA · TOCA UNA CASILLA';
+    ctx.font = `800 ${Math.max(10, Math.min(13, s * 0.28))}px system-ui,sans-serif`;
+    const hintH = 24;
+    const hintW = Math.min(Math.max(1, cw - 16), ctx.measureText(hint).width + 20);
+    const hintX = (cw - hintW) / 2;
+    const hintY = Math.max(2, Math.min(chh - hintH - 4, L.y0 - hintH - 5));
+    ctx.globalAlpha = 0.97;
+    ctx.fillStyle = 'rgba(12,20,48,.96)';
+    ctx.strokeStyle = 'rgba(255,100,116,.9)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    if (ctx.roundRect) ctx.roundRect(hintX, hintY, hintW, hintH, 12);
+    else ctx.rect(hintX, hintY, hintW, hintH);
+    ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(hint, cw / 2, hintY + hintH / 2, Math.max(1, hintW - 12));
+    ctx.restore();
+  }
+
+  // Limpieza en onda: pop, destello blanco, aureola de luz y chispas
+  S.fx = S.fx.filter(f => {
+    const px = L.x0 + f.x * s, py = L.y0 + f.y * s, el = now - f.t - (f.delay || 0);
+    if (el < 0) { drawCell(px, py, s, colorOf(f.color)); return true; }
+    const k = el / Math.max(1, CONFIG.CLEAR_ANIM_MS);
+    if (k >= 1) return false;
+    if (!f.sp && k >= 0.15) { f.sp = 1; burst(px + s / 2, py + s / 2, colorOf(f.color), 4 + S.streak, 5); }
+    if (G.glow) {                                               // aureola de luz detrás de la celda (Alto)
+      const gw = s * 2.6 * (0.6 + 0.4 * Math.min(1, k * 3));
+      ctx.save(); ctx.globalCompositeOperation = ADD(); ctx.globalAlpha = glowA(0.5) * (1 - k);
+      ctx.drawImage(glowSprite(colorOf(f.color)), px + s / 2 - gw / 2, py + s / 2 - gw / 2, gw, gw); ctx.restore();
+    }
+    const sc = k < 0.2 ? 1 + 0.25 * (k / 0.2) : 1.25 * (1 - (k - 0.2) / 0.8), off = s * (1 - sc) / 2;
+    drawCell(px + off, py + off, s * sc, k < 0.25 ? '#ffffff' : colorOf(f.color), k < 0.6 ? 1 : 1 - (k - 0.6) / 0.4);
+    return true;
+  });
+  drawBeams(now); drawRings(now);
+
+  drawFire(now, dt);
+
+  // Bandeja de cristal con celdas individuales (las piezas y los efectos originales se dibujan encima).
+  drawTrayPanel(now);
+  if (S.spin && now - S.spin.t > 240) S.spin = null;
+  S.tray.forEach((p, i) => {
+    if (!p || (dragOn && S.drag.i === i)) return;
+    const ps = trayPS(p), px = i * L.slotW + (L.slotW - p.w * ps) / 2, py = L.trayY + (L.trayH - p.h * ps) / 2;
+    if (S.spin && S.spin.i === i) {                                         // giro animado de 90°
+      const e = 1 - Math.pow(1 - Math.min(1, (now - S.spin.t) / 220), 3);
+      ctx.save(); ctx.translate(px + p.w * ps / 2, py + p.h * ps / 2); ctx.rotate(-(1 - e) * Math.PI / 2);
+      drawPiece(p, -p.w * ps / 2, -p.h * ps / 2, ps); ctx.restore();
+    } else drawPiece(p, px, py, ps);
+  });
+  if (S.tool === 'rotate') {                                                // insignia ⟳ sobre cada pieza
+    const pulse = 0.5 + 0.5 * Math.sin(now / 260);
+    S.tray.forEach((p, i) => {
+      if (!p || (dragOn && S.drag.i === i)) return;
+      const ps = trayPS(p), bx = Math.min((i + 1) * L.slotW - 16, i * L.slotW + (L.slotW + p.w * ps) / 2 + 6);
+      const by = Math.max(L.trayY + 14, L.trayY + (L.trayH - p.h * ps) / 2 - 2);
+      ctx.save(); ctx.translate(bx, by); ctx.fillStyle = T.accent; ctx.globalAlpha = 0.92;
+      ctx.beginPath(); ctx.arc(0, 0, 12 + pulse * 1.5, 0, 7); ctx.fill(); ctx.globalAlpha = 1;
+      ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+      ctx.translate(-9.6, -9.6); ctx.scale(0.8, 0.8); ctx.stroke(ROT_PATH); ctx.restore();
+    });
+  }
+  // Pieza arrastrada: crece suave desde la bandeja y proyecta sombra
+  if (tgt) {
+    const p = tgt.p, ps0 = trayPS(p), e = 1 - Math.pow(1 - Math.min(1, (now - S.drag.t0) / 130), 3);
+    const ds = ps0 + (s - ps0) * e, cx = tgt.tx + p.w * s / 2, cy = tgt.ty + p.h * s / 2;
+    const tlx = cx - p.w * ds / 2, tly = cy - p.h * ds / 2;
+    drawPiece(p, tlx + s * 0.08, tly + s * 0.16, ds, G.glow ? 0.1 : 0.22, '#000000');
+    drawPiece(p, tlx, tly, ds, 1);
+  }
+
+  drawParticles(now, dt);
+  // Destello de pantalla
+  if (S.flash) {
+    const k = Math.max(0, (now - S.flash.t) / 320);
+    if (k >= 1) S.flash = null;
+    else {
+      const cx = cw / 2, cy = L.y0 + L.bs / 2, g = ctx.createRadialGradient(cx, cy, 0, cx, cy, L.bs * 0.75);
+      g.addColorStop(0, `rgba(255,255,255,${S.flash.a * (1 - k)})`); g.addColorStop(1, 'rgba(255,255,255,0)');
+      ctx.fillStyle = g; ctx.fillRect(L.x0 - 6, L.y0 - 6, L.bs + 12, L.bs + 12);
+    }
+  }
+  // Textos
+  S.popups = S.popups.filter(p => {
+    const k = (now - p.t) / (p.kind === 'score' ? 1000 : 1250);
+    if (k >= 1) return false;
+    drawPopup(p, k, s); return true;
+  });
+  ctx.restore();
+}
+
+// Si algún efecto fallara, se descartan los efectos y se redibuja: tablero y bandeja nunca quedan a medias
+function resetFx(e) {
+  console.warn('Gráficos: se reiniciaron los efectos tras un fallo:', e && e.message);
+  Object.assign(S, { fx: [], parts: [], rings: [], beams: [], flames: [], popups: [], sweep: null, edge: null, zoom: null, shake: null, flash: null });
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over'; ctx.shadowBlur = 0;
+}
+let lastMaterialIdleFrame = 0;
+function frame(now) {
+  raf = 0;
+  const materialMotion = blockSkinMotionActive();
+  const transientMotion = S.fx.length || S.popups.length || S.parts.length || S.placed.length || S.shake || S.flash ||
+    S.drag || S.tool || S.spin || S.flames.length || S.rings.length || S.beams.length || S.zoom || S.sweep || S.edge ||
+    (S.streak >= 2 && !S.over && G.fire > 0 && (CONFIG.COMBO_GLOW || CONFIG.FIRE));
+  // When a premium material is the only animation, repaint at 30 fps. Gameplay/effects still follow RAF at full refresh rate.
+  if (materialMotion && !transientMotion && now - lastMaterialIdleFrame < 1000 / 30) {
+    raf = requestAnimationFrame(frame); return;
+  }
+  if (materialMotion) lastMaterialIdleFrame = now;
+  try { draw(now); } catch (e) { resetFx(e); try { draw(now); } catch (e2) { /* se reintenta con el próximo toque */ } }
+  // The loop sleeps whenever no gameplay effect or premium material animation is active.
+  if (transientMotion || blockSkinMotionActive()) raf = requestAnimationFrame(frame);
+}
+const redraw = () => { if (!raf) raf = requestAnimationFrame(frame); };
+document.addEventListener('visibilitychange', () => { if (!document.hidden && blockSkinMotionActive()) redraw(); });
+
+function resize() {
+  const st = $('stage'); dpr = Math.min(window.devicePixelRatio || 1, G.dpr);
+  cw = st.clientWidth; chh = st.clientHeight;
+  cv.width = cw * dpr; cv.height = chh * dpr;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  layout(); redraw();
+}
+
+/* =====================================================================
+   9. INPUT (arrastrar y soltar con Pointer Events)
+   ===================================================================== */
+const pos = e => { const r = cv.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; };
+
+// Celda del tablero bajo el dedo (se apunta un poco más arriba para que el dedo no la tape)
+const cellAt = (x, y) => {
+  const c = Math.floor((x - L.x0) / L.cell), r = Math.floor((y - L.cell * 1.2 - L.y0) / L.cell);
+  return (r >= 0 && c >= 0 && r < S.n && c < S.n) ? { y: r, x: c } : null;
+};
+cv.addEventListener('pointerdown', e => {
+  if (S.over) return;
+  const { x, y } = pos(e);
+  if (S.tool === 'bomb') {                        // modo bomba: elegir zona del tablero
+    cv.setPointerCapture(e.pointerId); S.bombHeld = true; S.bomb = cellAt(x, y); redraw(); return;
+  }
+  if (y < L.trayY - 8 || y > L.trayY + L.trayH + 8) return;
+  const i = Math.min(S.tray.length - 1, Math.floor(x / L.slotW));
+  if (!S.tray[i]) return;
+  cv.setPointerCapture(e.pointerId);
+  S.drag = { i, x, y, sx: x, sy: y, moved: false, t0: performance.now() };
+  if (S.tool !== 'rotate') { sfx.pick(); vibe(6); }
+  redraw();
+});
+cv.addEventListener('pointermove', e => {
+  if (S.bombHeld) { const q = pos(e); S.bomb = cellAt(q.x, q.y); redraw(); return; }
+  if (!S.drag) return;
+  Object.assign(S.drag, pos(e));
+  if (!S.drag.moved && Math.hypot(S.drag.x - S.drag.sx, S.drag.y - S.drag.sy) > 10) S.drag.moved = true;
+  redraw();
+});
+const drop = e => {
+  if (S.bombHeld) {
+    S.bombHeld = false; const b = S.bomb; S.bomb = null;
+    if (e.type === 'pointerup' && b) bombAt(b.y, b.x);
+    redraw(); return;
+  }
+  if (!S.drag) return;
+  if (S.tool === 'rotate' && !S.drag.moved && e.type === 'pointerup') {      // toque en modo girar = girar la pieza
+    const gi = S.drag.i; S.drag = null; rotTray(gi); redraw(); return;
+  }
+  const t = dropTarget(), i = S.drag.i, y = S.drag.y;
+  S.drag = null;
+  if (e.type === 'pointerup' && t.ok) {
+    S.snap = snapshot(); place(t.p, t.r, t.c); S.tray[i] = null;
+    if (S.tool === 'rotate') { S.tool = null; S.rotPaid = false; updateTools(); }   // al colocar termina el modo girar
+    afterMove();
+  }
+  else if (e.type === 'pointerup' && y < L.trayY) { sfx.bad(); vibe(25); }   // soltó en sitio inválido
+  redraw();
+};
+cv.addEventListener('pointerup', drop);
+cv.addEventListener('pointercancel', drop);
+
+/* =====================================================================
+   10. PANEL DE AJUSTES (sliders generados desde TUNABLES)
+   ===================================================================== */
+const panel = $('panel'), body = $('pBody');
+TUNABLES.forEach(t => {
+  if (t.g) body.insertAdjacentHTML('beforeend', `<div class="grp">${t.g}</div>`);
+  const row = document.createElement('label'); row.className = 'row';
+  row.innerHTML = `<span>${t.label}</span><output>${CONFIG[t.k]}</output>
+    <input type="range" min="${t.min}" max="${t.max}" step="${t.step}" value="${CONFIG[t.k]}">`;
+  const inp = row.querySelector('input'), out = row.querySelector('output');
+  inp.addEventListener('input', () => {
+    CONFIG[t.k] = +inp.value; out.textContent = inp.value;
+    if (!t.restart) { applyCfg(); snd.sync(); layout(); updateHud(); redraw(); }
+  });
+  inp.addEventListener('change', () => { if (t.restart) restart(); });
+  body.appendChild(row);
+});
+/* ---------- Modo desarrollador oculto ---------- */
+let taps = [], toastT = 0;
+function toast(msg) {
+  const el = $('toast'); el.textContent = msg; el.classList.remove('hidden');
+  clearTimeout(toastT); toastT = setTimeout(() => el.classList.add('hidden'), 1600);
+}
+function applyDev() {                                   // muestra u oculta el botón ⚙
+  const on = DEV.ALLOWED && P.dev;
+  $('gear').classList.toggle('hidden', !on); $('tGear').classList.toggle('hidden', !on);
+  if (!on) panel.classList.add('hidden');
+}
+function devTap() {                                     // secuencia deliberadamente no anunciada
+  if (!DEV.ALLOWED) return;
+  const now = performance.now();
+  taps = taps.filter(t => now - t < DEV.WINDOW_MS); taps.push(now);
+  if (taps.length >= DEV.TAPS) {
+    taps = [];
+    P.dev = P.dev !== true;
+    save(); applyDev(); sfx.levelup();
+    toast(P.dev ? 'Modo desarrollador activado' : 'Modo desarrollador desactivado');
+    // Reconstruir el menú inmediatamente para que los bloqueos reflejen el estado actual.
+    if (!$('home').classList.contains('hidden')) showMenu();
+  }
+}
+$('pCoins').onclick = () => { addCoins(500); toast('+500 monedas'); };
+$('pMis').onclick = () => { P.mis = null; ensureMissions(); save(); refreshBadges(); toast('Misiones reiniciadas'); };
+$('pDevOff').onclick = () => { P.dev = false; save(); applyDev(); toast('Modo desarrollador desactivado'); if (!$('home').classList.contains('hidden')) showMenu(); };
+$('gear').onclick = () => panel.classList.toggle('hidden');
+$('menuBtn').onclick = () => { panel.classList.add('hidden'); sfx.click(); showQuick(); };
+$('pClose').onclick = () => panel.classList.add('hidden');
+$('pRestart').onclick = () => { TET.on ? tetNew() : restart(); panel.classList.add('hidden'); };
+
+/* =====================================================================
+   10b. MODO CLÁSICO (bloques que caen)  ·  módulo independiente
+   Usa las skins, el audio, los anuncios y el menú del resto del juego.
+   ===================================================================== */
+const TW = 10, TH = 22, TVIS = 2;            // 10 columnas · 22 filas (las 2 de arriba están ocultas)
+const TSH = {                                // forma + índice de color de la paleta de la skin
+  I: { c: 5, m: ['....', '####', '....', '....'] },
+  O: { c: 3, m: ['##', '##'] },
+  T: { c: 7, m: ['.#.', '###', '...'] },
+  S: { c: 4, m: ['.##', '##.', '...'] },
+  Z: { c: 1, m: ['##.', '.##', '...'] },
+  J: { c: 6, m: ['#..', '###', '...'] },
+  L: { c: 2, m: ['..#', '###', '...'] },
+};
+const TIDS = Object.keys(TSH);
+const tMat = id => TSH[id].m.map(r => [...r].map(ch => (ch === '#' ? 1 : 0)));
+const rotCW = m => m.map((_, y) => m.map((__, x) => m[m.length - 1 - x][y]));
+const tShuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+// Versión recortada de cada pieza para las vistas previas (siguiente / guardada)
+const TMINI = Object.fromEntries(TIDS.map(id => {
+  const cells = []; tMat(id).forEach((r, y) => r.forEach((v, x) => v && cells.push([x, y])));
+  const x0 = Math.min(...cells.map(c => c[0])), y0 = Math.min(...cells.map(c => c[1]));
+  const pc = cells.map(([x, y]) => [x - x0, y - y0]);
+  return [id, { cells: pc, w: Math.max(...pc.map(c => c[0])) + 1, h: Math.max(...pc.map(c => c[1])) + 1 }];
+}));
+
+const TET = { on: false, live: false, over: false, rec: false, games: 0, grid: [], queue: [], cur: null, hold: null,
+  canHold: true, score: 0, lines: 0, level: 1, combo: -1, b2b: false, revives: 0, drop: 0, lock: 0, resets: 0,
+  soft: false, clearing: null, parts: [], pops: [], beams: [], rings: [], zoom: null, trail: null, lockfx: null, sweep: null, shake: null, counted: 0, tt: 0, paid: 0, coinsGot: 0, last: 0, raf: 0, timer: 0, w: 0, h: 0 };
+let lastGame = 'pz';                         // último modo jugado: decide qué "Continuar" muestra el menú
+const TL = {};                               // medidas del tablero
+const tcv = $('tcv'), tctx = tcv.getContext('2d');
+let tdpr = 1;
+const tetBlocked = () => ['ov', 'home', 'tut', 'panel'].some(id => !$(id).classList.contains('hidden'));
+const tcol = v => SK().pal[v - 1];
+
+/* ---------- Motor ---------- */
+const tetFits = (m, x, y) => m.every((row, cy) => row.every((v, cx) => {
+  if (!v) return true;
+  const gx = x + cx, gy = y + cy;
+  return gx >= 0 && gx < TW && gy < TH && (gy < 0 || !TET.grid[gy][gx]);
+}));
+function tetFill() { while (TET.queue.length < 7) TET.queue.push(...tShuffle(TIDS.slice())); }   // bolsa de 7: sin rachas injustas
+function tetSpawn(id) {
+  tetFill(); id = id || TET.queue.shift(); tetFill();
+  const m = tMat(id);
+  TET.cur = { id, m, x: Math.floor((TW - m.length) / 2), y: TVIS - m.findIndex(r => r.some(Boolean)) };
+  TET.drop = TET.lock = TET.resets = 0;
+  if (!tetFits(m, TET.cur.x, TET.cur.y)) { tetOver(); return false; }
+  sfx.classicSpawn(); return true;
+}
+// Velocidad de caída por nivel (ms por fila): nivel 1 = 1 s, baja rápido después
+let tetLastMoveSfx = 0;
+const tetGravity = () => {
+  const lv = TET.level, base = Math.pow(Math.max(0.05, 0.8 - (lv - 1) * 0.007), lv - 1) * 1000;
+  return Math.max(40, base / CONFIG.TET_SPEED_X);
+};
+function tetStep(dt, now) {
+  if (TET.clearing) { if (now - TET.clearing.t >= CONFIG.TET_CLEAR_MS) tetFinishClear(); return; }
+  const c = TET.cur; if (!c) return;
+  const g = tetGravity(), stepMs = TET.soft ? Math.max(30, Math.min(g, g / CONFIG.TET_SOFT_X)) : g;
+  if (tetFits(c.m, c.x, c.y + 1)) {
+    TET.lock = 0; TET.drop += dt;
+    while (TET.drop >= stepMs && tetFits(c.m, c.x, c.y + 1)) { c.y++; TET.drop -= stepMs; if (TET.soft) TET.score++; }
+    if (!tetFits(c.m, c.x, c.y + 1)) TET.drop = 0;
+    tetHud();
+  } else {                                    // apoyada: tiene un instante para deslizarla antes de fijarse
+    TET.drop = 0; TET.lock += dt;
+    if (TET.lock >= CONFIG.TET_LOCK_MS) tetLock();
+  }
+}
+const tetCan = () => TET.on && TET.cur && !TET.clearing && !TET.over && !tetBlocked();
+function tetTouch() {                         // mover/girar apoyada reinicia el retardo (máx. 12 veces)
+  const c = TET.cur;
+  if (!tetFits(c.m, c.x, c.y + 1) && TET.resets < 12) { TET.lock = 0; TET.resets++; }
+}
+function tetShift(dx) {
+  if (!tetCan()) return false;
+  const c = TET.cur;
+  if (!tetFits(c.m, c.x + dx, c.y)) return false;
+  c.x += dx; tetTouch();
+  const now = performance.now();
+  if (now - tetLastMoveSfx > 125) { tetLastMoveSfx = now; sfx.classicMove(dx); }
+  return true;
+}
+const KICKS = [[0, 0], [-1, 0], [1, 0], [0, -1], [-2, 0], [2, 0], [-1, -1], [1, -1]];   // si no cabe, prueba desplazarla
+function tetRotate() {
+  if (!tetCan() || TET.cur.id === 'O') return false;
+  const c = TET.cur, m = rotCW(c.m);
+  for (const [dx, dy] of KICKS) if (tetFits(m, c.x + dx, c.y + dy)) {
+    c.m = m; c.x += dx; c.y += dy; tetTouch(); sfx.rotate(); return true;
+  }
+  return false;
+}
+function tetHard() {                          // caída instantánea
+  if (!tetCan()) return;
+  const c = TET.cur, sy = c.y; let d = 0;
+  while (tetFits(c.m, c.x, c.y + 1)) { c.y++; d++; }
+  TET.score += 2 * d;
+  if (G.glow && d > 1 && !REDUCED) {                                      // estela de luz tras la pieza (Alto)
+    const top = {}; c.m.forEach((row, cy) => row.forEach((v, cx) => { if (v && !(c.x + cx in top)) top[c.x + cx] = cy; }));
+    TET.trail = { t: performance.now(), color: TSH[c.id].c, cols: Object.entries(top).map(([x, cy]) => ({ x: +x, a: sy + cy, b: c.y + cy })) };
+  }
+  if (!REDUCED) TET.shake = { t: performance.now(), mag: Math.min(6, 1.5 + d * 0.25) * (CONFIG.SHAKE_PX / 6) * G.shake };
+  sfx.hardDrop(d); tetLock();
+}
+function tetHold() {
+  if (!CONFIG.TET_HOLD || !TET.canHold || !tetCan()) return;
+  const prev = TET.hold; TET.hold = TET.cur.id; TET.cur = null;
+  tetSpawn(prev || undefined); TET.canHold = false; sfx.classicHold();
+}
+function tetLock() {
+  const c = TET.cur, col = TSH[c.id].c, fl = []; let visible = false;
+  c.m.forEach((row, cy) => row.forEach((v, cx) => {
+    if (!v) return;
+    const gy = c.y + cy, gx = c.x + cx;
+    if (gy >= 0) { TET.grid[gy][gx] = col; fl.push([gx, gy]); }
+    if (gy >= TVIS) visible = true;
+  }));
+  TET.cur = null; TET.canHold = true; TET.drop = TET.lock = TET.resets = 0;
+  if (G.shine && !REDUCED) TET.lockfx = { t: performance.now(), cells: fl };
+  sfx.classicLock(); vibe(8);
+  const rows = []; TET.grid.forEach((r, i) => { if (r.every(Boolean)) rows.push(i); });
+  if (rows.length) tetClear(rows);
+  else { TET.combo = -1; if (!visible) tetOver(); else tetSpawn(); }
+  tetHud();
+}
+function tetClear(rows) {
+  const n = rows.length, now = performance.now(), wasB2B = TET.b2b;
+  TET.combo++;
+  let pts = [0, 100, 300, 500, 800][n] * TET.level;
+  if (n === 4) { if (wasB2B) pts = Math.round(pts * 1.5); TET.b2b = true; } else TET.b2b = false;
+  const cb = TET.combo > 0 ? 50 * TET.combo * TET.level : 0;
+  TET.score += pts + cb; TET.lines += n;
+  track('lines', n); track('tet_lines', n); if (n >= 3) track('multi', 1);
+  TET.clearing = { rows, t: now };
+  if (!REDUCED) {                                                          // luces y onda de choque según la calidad
+    if (G.beams) rows.forEach(r => TET.beams.push({ r, t: now, color: TET.grid[r][0] }));
+    if (G.rings) TET.rings.push({ x: TL.x0 + TL.bw / 2, y: TL.y0 + (rows.reduce((a, b) => a + b, 0) / n - TVIS + 0.5) * TL.cell, t: now, max: TL.cell * (3 + n), dur: 520, w: 5 });
+    if (G.zoom) TET.zoom = { t: now, mag: Math.min(0.03, 0.008 + 0.006 * n) };
+    if (G.sweep) TET.sweep = { t: now };
+  }
+  const pal = SK().pal;
+  rows.forEach(r => { for (let x = 0; x < TW; x++)                       // chispas desde cada celda
+    tetBurst(TL.x0 + (x + 0.5) * TL.cell, TL.y0 + (r - TVIS + 0.5) * TL.cell, pal[(TET.grid[r][x] || 1) - 1], n >= 4 ? 3 : 2); });
+  const praise = ['', '', '¡Doble!', '¡Triple!', wasB2B ? '¡4 líneas seguidas!' : '¡4 líneas!'][n];
+  if (praise) TET.pops.push({ text: praise, t: now, size: n === 4 ? (wasB2B ? 0.85 : 1.15) : 1, col: n === 4 ? '#ffd34d' : '#9fe8ff' });
+  TET.pops.push({ text: '+' + (pts + cb), t: now, dy: 2.2, size: 0.8, col: '#ffffff' });
+  if (TET.combo > 0) TET.pops.push({ text: 'Combo ×' + (TET.combo + 1), t: now, dy: 3.6, size: 0.7, col: '#ffb02e' });
+  if (!REDUCED && n >= 3) TET.shake = { t: now, mag: CONFIG.SHAKE_PX * G.shake * (n === 4 ? 1 : 0.6) };
+  const lv = Math.min(20, CONFIG.TET_START_LEVEL + Math.floor(TET.lines / CONFIG.TET_LINES_PER_LEVEL));
+  if (lv > TET.level) { TET.level = lv; TET.pops.push({ text: 'Nivel ' + lv, t: now, dy: -2.6, size: 0.9, col: '#8aa2ff' }); sfx.levelup(0.5); }
+  sfx.classicClear(n, TET.combo + 1); vibe([15, 25, 15 + n * 10]);
+}
+function tetFinishClear() {
+  const rows = TET.clearing.rows.slice().sort((a, b) => a - b); TET.clearing = null;
+  rows.forEach(r => { TET.grid.splice(r, 1); TET.grid.unshift(Array(TW).fill(0)); });
+  if (TET.grid.every(r => r.every(v => !v))) {                           // tablero vacío
+    TET.score += 800 * TET.level; sfx.perfect(0.15); tetConfetti(90); track('perfect', 1);
+    TET.pops.push({ text: '¡Tablero limpio!', t: performance.now(), dy: -4, size: 0.85, col: '#ffe66d' });
+  }
+  tetSpawn(); tetHud();
+}
+function tetOver() {
+  if (TET.over) return;
+  TET.over = true; TET.games++; TET.soft = false;
+  TET.rec = TET.score > P.tbest;
+  if (TET.rec) { P.tbest = TET.score; save(); }
+  endStats(TET.score, TET);
+  award(TET, Math.min(CONFIG.COIN_CAP, Math.floor(TET.score / (CONFIG.COIN_RATE * 4))));
+  sfx.classicOver(); vibe([80, 40, 120]); tetHud();
+  TET.timer = setTimeout(tetOverCard, 700);
+}
+// Revivir (anuncio con recompensa): limpia las 8 filas más altas y la siguiente pieza es una barra larga
+function tetRevive() {
+  const top = Math.max(0, TET.grid.findIndex(r => r.some(Boolean)));
+  for (let r = top; r < Math.min(TH, top + 8); r++) {
+    for (let x = 0; x < TW; x++) if (TET.grid[r][x] && r >= TVIS) tetBurst(TL.x0 + (x + 0.5) * TL.cell, TL.y0 + (r - TVIS + 0.5) * TL.cell, tcol(TET.grid[r][x]), 1);
+    TET.grid[r] = Array(TW).fill(0);
+  }
+  TET.queue.unshift('I'); TET.revives--; TET.over = false; TET.cur = null; TET.clearing = null;
+  ov.classList.add('hidden'); sfx.revive(); vibe([30, 40, 30]);
+  tetSpawn(); tetHud();
+}
+
+/* ---------- Efectos ---------- */
+function tetBurst(x, y, color, n) {
+  if (REDUCED) return;
+  n = Math.round(n * CONFIG.PARTICLES * G.part);
+  for (let i = 0; i < n && TET.parts.length < G.cap; i++) {
+    const a = Math.random() * 6.283, v = TL.cell * (1.5 + Math.random() * 4);
+    const sh = G.add && i % 4 === 3 ? 3 : i % 3;
+    const sprite = sh === 3 ? 'flare' : sh === 0 ? (n >= 8 && i % 5 === 0 ? 'smoke' : 'circle') :
+      sh === 1 ? (i % 2 === 0 ? 'star' : 'magic') : (i % 2 === 0 ? 'spark' : 'trace');
+    TET.parts.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - TL.cell * 1.5, rot: Math.random() * 6, vr: (Math.random() - 0.5) * 12,
+      sz: TL.cell * (0.08 + Math.random() * 0.12), col: color, t: performance.now(), life: 500 + Math.random() * 500, sh, sprite });
+  }
+}
+function tetConfetti(n) {
+  if (REDUCED) return;
+  n = Math.round(n * CONFIG.PARTICLES * G.part);
+  const pal = SK().pal;
+  for (let i = 0; i < n && TET.parts.length < G.cap + 40; i++) {
+    const sh = Math.random() < 0.3 ? 1 : 2;
+    TET.parts.push({ x: TL.x0 + Math.random() * TL.bw, y: TL.y0 - Math.random() * TL.cell, vx: (Math.random() - 0.5) * TL.cell * 4,
+      vy: TL.cell * (1 + Math.random() * 4), rot: Math.random() * 6, vr: (Math.random() - 0.5) * 14, sz: TL.cell * (0.12 + Math.random() * 0.1),
+      col: pal[Math.floor(Math.random() * pal.length)], t: performance.now(), life: 1500 + Math.random() * 900, sh,
+      sprite: Math.random() < 0.5 ? 'star' : (Math.random() < 0.5 ? 'magic' : 'spark') });
+  }
+}
+
+/* ---------- Dibujado (sprites cacheados, igual que el modo puzle) ---------- */
+const tSpr = new Map(); let tSprB = 0;
+function tSprite(color) {
+  const B = Math.round(TL.cell * tdpr), st = SK().style, q = P.gfx;
+  if (B !== tSprB) { tSpr.clear(); tSprB = B; }
+  const key = [SK().assetSet || 'procedural', st, color, q].join('|'); let sp = tSpr.get(key);
+  if (!sp) {
+    const pad = cellPad(B, st, q), cvs = document.createElement('canvas');
+    cvs.width = cvs.height = B + pad * 2;
+    const c = cvs.getContext('2d');
+    const kitImage = blockKitImage(SK(), color);
+    if (kitImage) c.drawImage(kitImage, pad, pad, B, B);
+    else paintCell(c, pad, pad, B, color, st, q);
+    sp = { cvs, pad }; tSpr.set(key, sp);
+  }
+  return sp;
+}
+function tCell(x, y, s, color, alpha = 1) {
+  const sp = tSprite(color), r = s / tSprB, o = sp.pad * r;
+  tctx.globalAlpha = alpha;
+  tctx.drawImage(sp.cvs, x - o, y - o, sp.cvs.width * r, sp.cvs.height * r);
+  tctx.globalAlpha = 1;
+}
+function tCells(m, x, y, color, alpha) {      // dibuja una pieza en coordenadas de tablero (solo filas visibles)
+  m.forEach((row, cy) => row.forEach((v, cx) => {
+    const gy = y + cy; if (!v || gy < TVIS) return;
+    tCell(TL.x0 + (x + cx) * TL.cell, TL.y0 + (gy - TVIS) * TL.cell, TL.cell, color, alpha);
+  }));
+}
+function tMini(id, cx, cy, ms, alpha) {
+  const p = TMINI[id], col = tcol(TSH[id].c);
+  p.cells.forEach(([x, y]) => tCell(cx - p.w * ms / 2 + x * ms, cy - p.h * ms / 2 + y * ms, ms, col, alpha));
+}
+function tLight(cur, gy, col) {                 // luz sobre el lugar donde caerá la pieza
+  if (!G.light) return;
+  const c = tctx, s = TL.cell, w = cur.m[0].length, h = cur.m.length;
+  const cx = TL.x0 + (cur.x + w / 2) * s, cy = TL.y0 + (gy - TVIS + h / 2) * s, R = s * (3 + w * 0.5);
+  c.save(); boardClip(c, TL.x0 - 6, TL.y0 - 6, TL.bw + 12, TL.bh + 12);
+  c.globalCompositeOperation = ADD(); c.globalAlpha = glowA(0.5) * G.light;
+  c.drawImage(glowSprite(col), cx - R, cy - R, R * 2, R * 2); c.restore();
+}
+function tetDraw(now, dt) {
+  const c = tctx, s = TL.cell; if (!s) return;
+  c.clearRect(0, 0, TET.w, TET.h); c.save();
+  if (TET.shake) {
+    const k = Math.max(0, (now - TET.shake.t) / 300);
+    if (k >= 1) TET.shake = null;
+    else { const m = TET.shake.mag * (1 - k) * (1 - k); c.translate((Math.random() - 0.5) * 2 * m, (Math.random() - 0.5) * 2 * m); }
+  }
+  if (TET.zoom) {                                                           // golpe de cámara al limpiar (Alto)
+    const k = Math.max(0, (now - TET.zoom.t) / 340);
+    if (k >= 1) TET.zoom = null;
+    else { const sc = 1 + TET.zoom.mag * (1 - k) * (1 - k), zx = TL.x0 + TL.bw / 2, zy = TL.y0 + TL.bh / 2; c.translate(zx, zy); c.scale(sc, sc); c.translate(-zx, -zy); }
+  }
+  const x0 = TL.x0, y0 = TL.y0, er = s * SK().r, clr = TET.clearing, kk = clr ? Math.min(1, (now - clr.t) / CONFIG.TET_CLEAR_MS) : 0;
+  drawLayer(c, boardLayer('tet', TW, 20, s, er, 1.2, tdpr), x0, y0);        // fondo y casillas vacías en caché
+  for (let r = TVIS; r < TH; r++) {
+    const y = y0 + (r - TVIS) * s, isClr = clr && clr.rows.includes(r);
+    for (let x = 0; x < TW; x++) {
+      const v = TET.grid[r][x], px = x0 + x * s;
+      if (!v) continue;
+      if (isClr) {
+        const sc = 1 - kk * 0.85, off = s * (1 - sc) / 2;
+        if (G.glow) {                                                       // aureola de luz detrás de cada bloque
+          const gw = s * 2.4; c.save(); c.globalCompositeOperation = ADD(); c.globalAlpha = glowA(0.45) * (1 - kk);
+          c.drawImage(glowSprite(tcol(v)), px + s / 2 - gw / 2, y + s / 2 - gw / 2, gw, gw); c.restore();
+        }
+        tCell(px + off, y + off, s * sc, tcol(v), 1 - kk * 0.6);
+      } else tCell(px, y, s, tcol(v));
+    }
+    if (isClr) { c.fillStyle = `rgba(255,255,255,${0.75 * (1 - kk)})`; c.fillRect(x0, y, TL.bw, s); }   // destello de la fila
+  }
+  drawMaterialMotion(c, now, TET.grid, x0, y0, s, TW, TH - TVIS, TVIS); // skins premium también en clásico
+  if (TET.lockfx) {                                                         // destello al fijarse la pieza (Alto)
+    const k = Math.max(0, (now - TET.lockfx.t) / 200);
+    if (k >= 1) TET.lockfx = null;
+    else TET.lockfx.cells.forEach(([gx, gy]) => { if (gy >= TVIS) rrc(c, x0 + gx * s + 1.5, y0 + (gy - TVIS) * s + 1.5, s - 3, s - 3, er, `rgba(255,255,255,${(0.45 * (1 - k)).toFixed(3)})`); });
+  }
+  if (TET.trail) {                                                          // estela de la caída instantánea (Alto)
+    const k = Math.max(0, (now - TET.trail.t) / 280);
+    if (k >= 1) TET.trail = null;
+    else {
+      const rgb = rgbOf(tcol(TET.trail.color)); c.save(); c.globalCompositeOperation = ADD();
+      TET.trail.cols.forEach(({ x, a, b }) => {
+        const ya = Math.max(y0, y0 + (a - TVIS) * s), yb = y0 + (b - TVIS) * s;
+        if (yb <= ya) return;
+        const g = c.createLinearGradient(0, ya, 0, yb);
+        g.addColorStop(0, `rgba(${rgb},0)`); g.addColorStop(1, `rgba(${rgb},${(0.6 * (1 - k)).toFixed(3)})`);
+        c.fillStyle = g; c.fillRect(x0 + x * s + s * 0.12, ya, s * 0.76, yb - ya);
+      });
+      c.restore();
+    }
+  }
+  const cur = TET.cur;
+  if (cur && !clr) {
+    const col = tcol(TSH[cur.id].c);
+    if (CONFIG.TET_GHOST && !TET.over) {                                    // sombra de dónde caerá
+      let gy = cur.y; while (tetFits(cur.m, cur.x, gy + 1)) gy++;
+      if (gy !== cur.y) { tLight(cur, gy, col); tCells(cur.m, cur.x, gy, col, 0.26); }
+    }
+    tCells(cur.m, cur.x, cur.y, col, 1);
+  }
+  if (TET.beams.length) {                                                   // rayos de luz en las filas limpiadas (Alto)
+    c.save(); c.globalCompositeOperation = ADD();
+    TET.beams = TET.beams.filter(b => {
+      const k = Math.max(0, (now - b.t) / 480); if (k >= 1) return false;
+      const e = 1 - Math.pow(1 - k, 3), a = Math.pow(1 - k, 1.3) * (T.dark ? 0.65 : 0.5), rgb = rgbOf(tcol(b.color));
+      const th = s * (0.35 + 1.4 * e), cy = y0 + (b.r - TVIS + 0.5) * s, ex = s * 0.7, len = TL.bw + ex * 2;
+      const g = c.createLinearGradient(x0 - ex, 0, x0 - ex + len, 0);
+      g.addColorStop(0, `rgba(${rgb},0)`); g.addColorStop(0.15, `rgba(${rgb},${a})`); g.addColorStop(0.5, `rgba(255,255,255,${a})`);
+      g.addColorStop(0.85, `rgba(${rgb},${a})`); g.addColorStop(1, `rgba(${rgb},0)`);
+      c.fillStyle = g; c.globalAlpha = 0.45; c.fillRect(x0 - ex, cy - th * 0.85, len, th * 1.7);
+      c.globalAlpha = 1; c.fillRect(x0 - ex, cy - th * 0.275, len, th * 0.55);
+      return true;
+    });
+    c.restore();
+  }
+  if (TET.sweep) {                                                          // barrido de luz al limpiar
+    const k = Math.max(0, (now - TET.sweep.t) / 950);
+    if (k >= 1) TET.sweep = null; else sweepBand(c, x0 - 6, y0 - 6, TL.bw + 12, TL.bh + 12, k, G.sweep);
+  }
+  if (TET.rings.length) {                                                   // onda de choque
+    c.save();
+    TET.rings = TET.rings.filter(r => {
+      const k = Math.max(0, (now - r.t) / r.dur); if (k >= 1) return false;
+      c.globalAlpha = (1 - k) * (T.dark ? 0.7 : 0.6); c.strokeStyle = T.dark ? '#ffffff' : T.accent; c.lineWidth = Math.max(1, r.w * (1 - k));
+      c.beginPath(); c.arc(r.x, r.y, r.max * (1 - Math.pow(1 - k, 3)), 0, 7); c.stroke(); return true;
+    });
+    c.restore();
+  }
+  // Panel lateral: siguientes piezas y pieza guardada
+  const sx = TL.sx, sw = TL.sw;
+  const lab = (t, y) => { c.globalAlpha = 0.6; c.fillStyle = T.text; c.font = '800 11px system-ui,sans-serif'; c.textAlign = 'center'; c.fillText(t, sx + sw / 2, y); c.globalAlpha = 1; };
+  const n = Math.max(1, Math.min(5, CONFIG.TET_NEXT)), ms = Math.min(s * 0.62, (sw - 14) / 4), bh = ms * 3;
+  lab('SIGUIENTE', y0 + 8);
+  for (let i = 0; i < n; i++) {
+    const by = y0 + 16 + i * (bh + 5);
+    rrc(c, sx, by, sw, bh, 12, T.board);
+    if (TET.queue[i]) tMini(TET.queue[i], sx + sw / 2, by + bh / 2, ms, i === 0 ? 1 : 0.8);
+  }
+  if (CONFIG.TET_HOLD) {
+    const hy = y0 + 16 + n * (bh + 5) + 16;
+    lab('GUARDADA', hy - 5); rrc(c, sx, hy, sw, bh, 12, T.board);
+    if (TET.hold) tMini(TET.hold, sx + sw / 2, hy + bh / 2, ms, TET.canHold ? 1 : 0.35);
+  }
+  // Partículas
+  TET.parts = TET.parts.filter(p => {
+    const k = (now - p.t) / p.life; if (k >= 1) return false;
+    p.vy += s * 14 * dt / 1000 * 1; p.x += p.vx * dt / 1000; p.y += p.vy * dt / 1000; p.rot += p.vr * dt / 1000;
+    if (p.sh === 3) {                                                       // destello Kenney (Alto) con fallback
+      const sz = p.sz * 3 * (1 - 0.4 * k);
+      if (!drawKenneyParticle(c, p.sprite || 'flare', p.x, p.y, sz * 2, sz * 2, p.rot, glowA(0.65) * (1 - k), true)) {
+        c.save(); c.globalCompositeOperation = ADD(); c.globalAlpha = glowA(0.65) * (1 - k);
+        c.drawImage(glowSprite(p.col), p.x - sz, p.y - sz, sz * 2, sz * 2); c.restore();
+      }
+      return true;
+    }
+    const spriteSize = p.sz * (p.sh === 1 ? 3.8 : p.sh === 2 ? 3.5 : 2.8);
+    if (drawKenneyParticle(c, p.sprite || 'spark', p.x, p.y, spriteSize, spriteSize, p.rot, 1 - k * k, false)) return true;
+    c.save(); c.globalAlpha = 1 - k * k; c.fillStyle = p.col; c.translate(p.x, p.y); c.rotate(p.rot); c.beginPath();
+    if (p.sh === 0) c.arc(0, 0, p.sz, 0, 7);
+    else if (p.sh === 1) { const z = p.sz * 1.5; c.moveTo(0, -z); c.quadraticCurveTo(0, 0, z, 0); c.quadraticCurveTo(0, 0, 0, z); c.quadraticCurveTo(0, 0, -z, 0); c.quadraticCurveTo(0, 0, 0, -z); }
+    else c.rect(-p.sz, -p.sz * 0.5, p.sz * 2, p.sz);
+    c.fill(); c.restore(); return true;
+  });
+  // Textos de felicitación
+  TET.pops = TET.pops.filter(p => {
+    const k = (now - p.t) / 1100; if (k >= 1) return false;
+    const pop = k < 0.2 ? easeOutBack(k / 0.2) : 1, a = k > 0.7 ? 1 - (k - 0.7) / 0.3 : 1, z = s * (p.size || 1.1);
+    c.save(); c.translate(x0 + TL.bw / 2, y0 + TL.bh * 0.34 + (p.dy || 0) * s - k * s * 1.2); c.scale(pop, pop); c.globalAlpha = a;
+    c.font = `900 ${z}px "Avenir Next","Trebuchet MS",system-ui,sans-serif`; c.textAlign = 'center'; c.textBaseline = 'middle'; c.lineJoin = 'round';
+    c.lineWidth = z * 0.22; c.strokeStyle = 'rgba(45,20,90,.88)'; c.strokeText(p.text, 0, 0);
+    if (G.glow) { c.shadowColor = p.col || '#ffd34d'; c.shadowBlur = z * 0.35; }
+    c.fillStyle = p.col || '#ffd34d'; c.fillText(p.text, 0, 0); c.restore(); return true;
+  });
+  c.restore();
+}
+
+function tetFrame(now) {
+  TET.raf = 0; if (!TET.on) return;
+  const dt = Math.min(100, now - (TET.last || now)); TET.last = now;
+  if (!TET.over && !tetBlocked()) tetStep(dt, now);
+  try { tetDraw(now, dt); } catch (e) {                                     // un efecto fallido no puede congelar el juego
+    console.warn('Gráficos: se reiniciaron los efectos tras un fallo:', e && e.message);
+    Object.assign(TET, { parts: [], pops: [], beams: [], rings: [], zoom: null, trail: null, lockfx: null, sweep: null, shake: null });
+    tctx.setTransform(tdpr, 0, 0, tdpr, 0, 0); tctx.globalAlpha = 1; tctx.globalCompositeOperation = 'source-over'; tctx.shadowBlur = 0;
+    try { tetDraw(now, dt); } catch (e2) { /* siguiente fotograma */ }
+  }
+  TET.raf = requestAnimationFrame(tetFrame);
+}
+function tetResize() {
+  const st = $('tstage'); tdpr = Math.min(window.devicePixelRatio || 1, G.dpr);
+  TET.w = st.clientWidth; TET.h = st.clientHeight;
+  if (!TET.w || !TET.h) return;
+  tcv.width = TET.w * tdpr; tcv.height = TET.h * tdpr; tctx.setTransform(tdpr, 0, 0, tdpr, 0, 0);
+  const gap = 12, side = Math.min(92, Math.max(70, TET.w * 0.24));
+  TL.cell = Math.max(10, Math.floor(Math.min((TET.w - gap * 3 - side) / TW, (TET.h - 14) / 20)));
+  TL.bw = TL.cell * TW; TL.bh = TL.cell * 20;
+  TL.x0 = Math.floor((TET.w - (TL.bw + gap + side)) / 2); TL.sx = TL.x0 + TL.bw + gap; TL.sw = side;
+  TL.y0 = Math.floor((TET.h - TL.bh) / 2);
+}
+function tetHud() {
+  $('tScore').textContent = TET.score; $('tLevel').textContent = TET.level; $('tLines').textContent = TET.lines;
+  $('tBest').textContent = 'Récord ' + Math.max(P.tbest || 0, TET.score);
+}
+
+/* ---------- Flujo: iniciar, pausar, salir ---------- */
+function tetShow() {
+  window.RaddykallAudio?.setMode('classic');
+  $('home').classList.add('hidden'); $('quick').classList.add('hidden'); $('tetris').classList.remove('hidden');
+  TET.on = true; tetResize();
+  if (!TET.raf) { TET.last = 0; TET.raf = requestAnimationFrame(tetFrame); }
+}
+function tetNew() {
+  window.RaddykallAudio?.setMode('classic'); sfx.modeStart();
+  clearTimeout(TET.timer); Ads.hide();
+  Object.assign(TET, { grid: Array.from({ length: TH }, () => Array(TW).fill(0)), queue: [], hold: null, canHold: true, cur: null,
+    score: 0, lines: 0, level: CONFIG.TET_START_LEVEL, combo: -1, b2b: false, over: false, rec: false, live: true,
+    revives: CONFIG.TET_REVIVES, clearing: null, parts: [], pops: [], beams: [], rings: [], zoom: null, trail: null, lockfx: null, sweep: null, shake: null, counted: 0, tt: 0, paid: 0, coinsGot: 0, soft: false });
+  lastGame = 'tet';
+  tetShow(); tetSpawn(); tetHud();
+  if (!P.ttut) tetHelp();
+}
+function tetLeave() {                         // vuelve al menú principal (la partida queda en pausa)
+  TET.on = false; TET.soft = false; clearTimeout(TET.timer); stopDas();
+  $('tetris').classList.add('hidden'); ov.classList.add('hidden'); showMenu();
+}
+function tetPause() {
+  if (!TET.on || TET.over) return;
+  ov.innerHTML = `<div class="card"><h2>Pausa</h2><p>Puntos ${TET.score} — Líneas ${TET.lines}</p>
+    <button class="btn" data-a="tet_resume">Continuar</button>
+    <button class="btn ghost" data-a="tet_restart">Reiniciar</button>
+    <button class="btn ghost" data-a="tet_help">Cómo jugar</button>
+    <button class="btn ghost" data-a="gfx">Gráficos: <span class="gfxcur">${G.name}</span></button>
+    <button class="btn ghost" data-a="tet_home">Menú principal</button></div>`;
+  ov.classList.remove('hidden');
+}
+function tetHelp() {
+  ov.innerHTML = `<div class="card"><h2>Modo clásico</h2>
+    <div class="goalbox" style="text-align:left">Completa <b>líneas horizontales</b> para limpiarlas.<br>
+    <b>◀ ▶</b> mueven la pieza · <b>⟳</b> la gira (también tocando el tablero) · <b>▼</b> la baja más rápido.<br>
+    Desliza el dedo <b>hacia abajo</b> de golpe para soltarla al instante, y usa el botón de intercambio para guardar una pieza.</div>
+    <button class="btn" data-a="tet_go">¡A jugar!</button></div>`;
+  ov.classList.remove('hidden');
+}
+function tetOverCard() {
+  if (!TET.on || !TET.over) return;
+  ov.innerHTML = `<div class="card"><h2>Fin de la partida</h2><div class="big">${TET.score}</div>
+    <p>${TET.rec ? '🏆 ¡Nuevo récord!' : 'Récord: ' + P.tbest}<br>Líneas ${TET.lines} — Nivel ${TET.level}</p>${coinLine(TET)}
+    ${TET.revives > 0 && Ads.hasRewarded() ? '<button class="btn" data-a="tet_revive">▶ Seguir jugando (ver anuncio)</button>' : ''}
+    <button class="btn ${TET.revives > 0 && Ads.hasRewarded() ? 'ghost' : ''}" data-a="tet_again">Jugar de nuevo</button>
+    <button class="btn ghost" data-a="m_share">Compartir</button>
+    <button class="btn ghost" data-a="tet_home">Menú</button></div>`;
+  ov.classList.remove('hidden');
+}
+// Intersticial entre partidas (cada N), igual que en el modo puzle
+const tetWithAd = fn => { const e = CONFIG.INTERSTITIAL_EVERY; (e > 0 && TET.games % e === 0) ? Ads.interstitial(fn) : fn(); };
+function tetAction(a) {
+  if (a === 'tet') tetNew();
+  else if (a === 'tet_cont') { tetShow(); tetPause(); }
+  else if (a === 'tet_resume') ov.classList.add('hidden');
+  else if (a === 'tet_restart' || a === 'tet_again') tetWithAd(tetNew);
+  else if (a === 'tet_help') tetHelp();
+  else if (a === 'tet_go') { P.ttut = true; save(); ov.classList.add('hidden'); }
+  else if (a === 'tet_home') tetLeave();
+  else if (a === 'tet_revive') Ads.rewarded(tetRevive, tetOverCard);
+}
+
+/* ---------- Controles: botones (con repetición) y gestos sobre el tablero ---------- */
+let dasT = 0, dasI = 0;
+const stopDas = () => { clearTimeout(dasT); clearInterval(dasI); };
+function padRepeat(btn, dx) {                 // mantener pulsado = mover varias casillas
+  btn.addEventListener('pointerdown', e => {
+    e.preventDefault(); btn.setPointerCapture(e.pointerId); btn.classList.add('on');
+    tetShift(dx); stopDas(); dasT = setTimeout(() => { dasI = setInterval(() => tetShift(dx), 55); }, 170);
+  });
+  ['pointerup', 'pointercancel', 'lostpointercapture'].forEach(ev => btn.addEventListener(ev, () => { btn.classList.remove('on'); stopDas(); }));
+}
+function padTap(btn, fn) {
+  btn.addEventListener('pointerdown', e => { e.preventDefault(); btn.classList.add('on'); fn(); });
+  ['pointerup', 'pointercancel', 'pointerleave'].forEach(ev => btn.addEventListener(ev, () => btn.classList.remove('on')));
+}
+function padSoft(btn) {                       // mantener pulsado = bajar rápido
+  btn.addEventListener('pointerdown', e => { e.preventDefault(); btn.setPointerCapture(e.pointerId); btn.classList.add('on'); TET.soft = true; });
+  ['pointerup', 'pointercancel', 'lostpointercapture'].forEach(ev => btn.addEventListener(ev, () => { btn.classList.remove('on'); TET.soft = false; }));
+}
+padRepeat($('tL'), -1); padRepeat($('tR'), 1); padSoft($('tD'));
+padTap($('tRot'), tetRotate); padTap($('tHd'), tetHard); padTap($('tHold'), tetHold);
+$('tPause').onclick = () => { sfx.click(); tetPause(); };
+$('tGear').onclick = () => panel.classList.toggle('hidden');
+
+let tg = null;                                // gesto en curso sobre el tablero
+tcv.addEventListener('pointerdown', e => {
+  if (!CONFIG.TET_GESTURES || !tetCan()) return;
+  tcv.setPointerCapture(e.pointerId);
+  tg = { x: e.clientX, y: e.clientY, lx: e.clientX, t: performance.now(), acc: 0, moved: false };
+});
+tcv.addEventListener('pointermove', e => {
+  if (!tg) return;
+  tg.acc += e.clientX - tg.lx; tg.lx = e.clientX;
+  const step = Math.max(14, TL.cell * 0.9);
+  while (Math.abs(tg.acc) >= step) { const d = Math.sign(tg.acc); tetShift(d); tg.acc -= d * step; tg.moved = true; }
+  const dy = e.clientY - tg.y;
+  TET.soft = dy > TL.cell * 1.2; if (TET.soft) tg.moved = true;          // arrastrar hacia abajo = bajar rápido
+});
+const tEnd = e => {
+  if (!tg) return;
+  const dt = performance.now() - tg.t, dy = e.clientY - tg.y, dx = e.clientX - tg.x;
+  TET.soft = false;
+  if (e.type === 'pointerup') {
+    if (!tg.moved && dt < 300 && Math.hypot(dx, dy) < 12) tetRotate();             // toque = girar
+    else if (dy > TL.cell * 3 && dy / Math.max(1, dt) > 0.9) tetHard();            // deslizar rápido hacia abajo = caída
+  }
+  tg = null;
+};
+tcv.addEventListener('pointerup', tEnd); tcv.addEventListener('pointercancel', tEnd);
+
+new ResizeObserver(tetResize).observe($('tstage'));
+document.addEventListener('visibilitychange', () => {                    // al salir de la app se pausa solo
+  if (document.hidden && TET.on && !TET.over && ov.classList.contains('hidden')) tetPause();
+});
+
+/* =====================================================================
+   11. ARRANQUE
+   ===================================================================== */
+// Migrate the retired Ocean palette to its premium crystal replacement without losing ownership.
+if (Array.isArray(P.owned?.themes) && P.owned.themes.includes('ocean') && !P.owned.themes.includes('quartz')) P.owned.themes.push('quartz');
+if (Array.isArray(P.owned?.themes)) P.owned.themes = P.owned.themes.filter(id => id !== 'ocean' && THEMES.some(t => t.id === id));
+if (P.theme === 'ocean') P.theme = 'quartz';
+if (!THEMES.some(t => t.id === P.theme)) P.theme = 'night';
+if (!P.owned.themes.includes('night')) P.owned.themes.push('night');
+if (!P.owned.themes.includes('auto')) P.owned.themes.push('auto');
+save(); // conserva la migración y todos los datos existentes
+applyTheme(P.theme);
+ensureMissions();
+new MutationObserver(() => { readTheme(); redraw(); }).observe(document.documentElement, { attributes: true });
+new ResizeObserver(resize).observe($('stage'));
+document.body.dataset.gfx = P.gfx;
+applyCfg(); applyDev();
+buildTools();
+startGame('inf');
+showMenu();
+setInterval(tickTimer, 100);
+// Tutorial deferred until the player starts their first actual block game.
+$('mchip').onclick = () => { sfx.click(); openShop('missions'); };
+// Pantalla de carga: el logo aparece unos instantes y deja paso al menú
+(() => {
+  const sp = $('splash'); $('splashLogo').src = LOGO; sp.style.setProperty('--sp', CONFIG.SPLASH_MS + 'ms');
+  setTimeout(() => { sp.classList.add('out'); setTimeout(() => sp.remove(), 500); }, CONFIG.SPLASH_MS);
+})();
+})();

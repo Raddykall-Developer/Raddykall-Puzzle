@@ -25,6 +25,21 @@ jobs:
       - name: Instalar dependencias
         run: npm ci
 
+      - name: Validar la nueva estructura de interfaz y scripts
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s www/ui.css
+          test -s www/ui-quality.css
+          test -s www/game.js
+          test -s www/language.js
+          grep -q 'ui-quality.css' www/index.html
+          grep -q 'src="./game.js"' www/index.html
+          grep -q 'src="./language.js"' www/index.html
+          node --check www/game.js
+          node --check www/language.js
+          echo "OK: estilos y scripts externos presentes y JavaScript válido"
+
       - name: Verificar recursos del paquete gráfico
         shell: bash
         run: |
