@@ -3,3 +3,5 @@ Recursos gráficos
 Los PNG de www/assets/kenney/ proceden del paquete Kenney UI Pack proporcionado por el usuario. Kenney publica sus assets bajo licencia CC0. Página del paquete: https://kenney.nl/assets/ui-pack
 
 Capacitor, Vite y GitHub Actions son herramientas de terceros y conservan sus propias licencias y términos. Este proyecto no afirma estar afiliado oficialmente con esos proyectos.
+
+Los PNG de public/assets/themes/block-puzzle-kit-free/ proceden de Block Puzzle Kit Free, de heyheythere, bajo licencia CC BY 4.0. Crédito: Block Puzzle Kit Free by heyheythere - https://heyheythere.itch.io/block-puzzle-kit-free - CC BY 4.0. Licencia y referencia incluidas en public/assets/themes/block-puzzle-kit-free/LICENSE.txt.
