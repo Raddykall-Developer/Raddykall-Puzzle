@@ -1,0 +1,53 @@
+name: Extract Kenney Space Skyboxes
+on:
+  push:
+    paths:
+      - 'kenney_skyboxes-space.zip'
+      - '.github/workflows/extract-kenney-skyboxes.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  extract-skyboxes:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout latest main
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Extract skybox images and license
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/kenney-skyboxes public/assets/kenney-skyboxes-space www/assets/kenney-skyboxes-space
+          mkdir -p /tmp/kenney-skyboxes public/assets/kenney-skyboxes-space www/assets/kenney-skyboxes-space
+          unzip -q kenney_skyboxes-space.zip -d /tmp/kenney-skyboxes
+          echo "Archive sample (first 120 entries):"
+          unzip -Z1 kenney_skyboxes-space.zip | sed -n '1,120p'
+          echo "Image files found:"
+          find /tmp/kenney-skyboxes -type f \( -iname '*.png' -o -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.webp' -o -iname '*.hdr' -o -iname '*.exr' -o -iname '*.tga' -o -iname '*.bmp' \) | sed -n '1,160p'
+          # Preserve image-relative folders; keep licenses and docs for attribution.
+          while IFS= read -r -d '' file; do
+            rel="${file#/tmp/kenney-skyboxes/}"
+            mkdir -p "public/assets/kenney-skyboxes-space/$(dirname "$rel")"
+            cp "$file" "public/assets/kenney-skyboxes-space/$rel"
+          done < <(find /tmp/kenney-skyboxes -type f \( -iname '*.png' -o -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.webp' -o -iname '*.hdr' -o -iname '*.exr' -o -iname '*.tga' -o -iname '*.bmp' -o -iname 'license*' -o -iname 'readme*' -o -iname 'credits*' \) -print0)
+          cp -a public/assets/kenney-skyboxes-space/. www/assets/kenney-skyboxes-space/
+          count=$(find public/assets/kenney-skyboxes-space -type f | wc -l)
+          echo "Extracted skybox assets and docs: $count"
+          echo "Flat file names (first 120):"
+          find public/assets/kenney-skyboxes-space -type f | sort | sed -n '1,120p'
+      - name: Commit extracted skyboxes
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/assets/kenney-skyboxes-space www/assets/kenney-skyboxes-space
+          if git diff --cached --quiet; then
+            echo "No skybox asset changes to commit."
+          else
+            git commit -m "Extract Kenney space skybox assets"
+            git pull --rebase origin main
+            git push
+          fi
