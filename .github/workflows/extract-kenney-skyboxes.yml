@@ -15,6 +15,12 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+      - name: Prepare Python image optimizer
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install Pillow
+        run: python -m pip install --disable-pip-version-check Pillow
       - name: Extract skybox images and license
         shell: bash
         run: |
@@ -32,6 +38,35 @@ jobs:
             mkdir -p "public/assets/kenney-skyboxes-space/$(dirname "$rel")"
             cp "$file" "public/assets/kenney-skyboxes-space/$rel"
           done < <(find /tmp/kenney-skyboxes -type f \( -iname '*.png' -o -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.webp' -o -iname '*.hdr' -o -iname '*.exr' -o -iname '*.tga' -o -iname '*.bmp' -o -iname 'license*' -o -iname 'readme*' -o -iname 'credits*' \) -print0)
+          # Create mobile-friendly WebP versions of the five skybox panoramas.
+          # Originals remain in the pack folder for fidelity/licensing, while runtime uses these optimized files.
+          python - <<'PY'
+          from pathlib import Path
+          from PIL import Image
+          root = Path("public/assets/kenney-skyboxes-space")
+          source_dir = root / "Skyboxes"
+          output_dir = root / "mobile"
+          output_dir.mkdir(parents=True, exist_ok=True)
+          names = [
+              "skybox-space-band.png",
+              "skybox-space-dark.png",
+              "skybox-space-day.png",
+              "skybox-space-galaxy.png",
+              "skybox-space-nebula.png",
+          ]
+          for name in names:
+              source = source_dir / name
+              if not source.is_file():
+                  raise SystemExit(f"Missing skybox: {source}")
+              with Image.open(source) as original:
+                  img = original.convert("RGB")
+                  if img.width > 2048:
+                      height = round(img.height * 2048 / img.width)
+                      img = img.resize((2048, height), Image.Resampling.LANCZOS)
+                  target = output_dir / (source.stem + ".webp")
+                  img.save(target, "WEBP", quality=83, method=6)
+                  print(f"{source.name}: {original.width}x{original.height} -> {img.width}x{img.height}, {target.stat().st_size:,} bytes")
+          PY
           cp -a public/assets/kenney-skyboxes-space/. www/assets/kenney-skyboxes-space/
           count=$(find public/assets/kenney-skyboxes-space -type f | wc -l)
           echo "Extracted skybox assets and docs: $count"
