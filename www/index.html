@@ -2701,6 +2701,70 @@ body.admob-banner-active #home .rk-ad-slot{display:none!important}
  *,*::before,*::after{scroll-behavior:auto!important}
 }
 </style>
+
+<style id="raddykall-ad-bottom-layout-v2">
+/* Keep every game surface above the real native AdMob banner. */
+:root{--rkp-ad-bottom:calc(var(--admob-banner-height,50px) + env(safe-area-inset-bottom,0px))}
+body.admob-banner-active{--rkp-ad-visible:var(--rkp-ad-bottom)}
+body.admob-banner-active #app{
+  height:calc(100dvh - var(--rkp-ad-bottom))!important;
+  min-height:0!important;
+  max-height:calc(100dvh - var(--rkp-ad-bottom))!important;
+  overflow:hidden!important;
+}
+body.admob-banner-active #home,
+body.admob-banner-active #page,
+body.admob-banner-active #shop,
+body.admob-banner-active #tetris,
+body.admob-banner-active #splash{
+  top:0!important;
+  bottom:var(--rkp-ad-bottom)!important;
+  height:auto!important;
+  min-height:0!important;
+  max-height:none!important;
+}
+body.admob-banner-active #ov,
+body.admob-banner-active #tut,
+body.admob-banner-active #quick{
+  top:0!important;
+  bottom:var(--rkp-ad-bottom)!important;
+  height:auto!important;
+  max-height:none!important;
+}
+body.admob-banner-active #panel{
+  bottom:var(--rkp-ad-bottom)!important;
+  max-height:calc(100dvh - var(--rkp-ad-bottom) - 16px)!important;
+}
+body.admob-banner-active #toast{
+  bottom:calc(var(--rkp-ad-bottom) + 12px)!important;
+  max-height:calc(100dvh - var(--rkp-ad-bottom) - 24px)!important;
+}
+body.admob-banner-active #home{
+  padding-bottom:8px!important;
+  overflow-y:auto!important;
+  overscroll-behavior:contain;
+}
+body.admob-banner-active #home .hm{
+  height:auto!important;
+  min-height:100%!important;
+  padding-bottom:8px!important;
+}
+body.admob-banner-active #page,
+body.admob-banner-active #shop,
+body.admob-banner-active #tetris{
+  padding-bottom:0!important;
+}
+body.admob-banner-active #tpad,
+body.admob-banner-active #tools{
+  padding-bottom:8px!important;
+}
+body.admob-banner-active .rk-ad-slot{display:none!important}
+@media(max-height:560px){
+  body.admob-banner-active #home{overflow-y:auto!important}
+  body.admob-banner-active #home .hm{justify-content:flex-start!important}
+}
+</style>
+
 </head>
 <body>
 <div id="bg"><i></i><i></i><i></i><i></i><i class="hb"></i><i class="hb"></i><i class="sp" style="left:44%;top:22%;animation-delay:-1.6s;animation-duration:2.7s"></i><i class="sp" style="left:71%;top:15%;animation-delay:-1.5s;animation-duration:2.7s"></i><i class="sp" style="left:67%;top:30%;animation-delay:-0.1s;animation-duration:3.6s"></i><i class="sp" style="left:11%;top:33%;animation-delay:-0.4s;animation-duration:3.6s"></i><i class="sp" style="left:75%;top:18%;animation-delay:-3.8s;animation-duration:4.1s"></i><i class="sp" style="left:77%;top:10%;animation-delay:-2.3s;animation-duration:3.6s"></i><i class="sp" style="left:31%;top:8%;animation-delay:-2.2s;animation-duration:2.9s"></i><i class="sp" style="left:56%;top:21%;animation-delay:-2.2s;animation-duration:4.0s"></i><i class="sp" style="left:74%;top:90%;animation-delay:-0.7s;animation-duration:4.0s"></i><i class="sp" style="left:84%;top:27%;animation-delay:-1.5s;animation-duration:3.9s"></i><i class="sp" style="left:11%;top:75%;animation-delay:-0.2s;animation-duration:3.1s"></i><i class="sp" style="left:90%;top:71%;animation-delay:-1.7s;animation-duration:3.4s"></i><i class="sp" style="left:77%;top:61%;animation-delay:-1.4s;animation-duration:3.2s"></i><i class="sp" style="left:26%;top:92%;animation-delay:-3.1s;animation-duration:2.8s"></i></div>
