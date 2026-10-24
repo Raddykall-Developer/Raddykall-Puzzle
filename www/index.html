@@ -1941,6 +1941,8 @@ const SKINS = [   // Los índices existentes se conservan para respetar compras 
    pal:['#8798ad','#aebbc9','#73869a','#c5d1dd','#617486','#91a2b5','#d2dce6','#526577'], note:'Metal cepillado, biseles y remaches'},
   {name:'Obsidiana', price:750, style:'obsidian', r:0.15, motion:'obsidian', premium:true,
    pal:['#8a72ff','#4f83ff','#cf65ef','#49d8d2','#fd6aa5','#8c9dff','#bd76ff','#5b72b8'], note:'Vidrio volcánico oscuro con luz violeta móvil'},
+  {name:'Brillo 3D', price:0, style:'kit-glossy', assetSet:'blockPuzzleKit', r:0.14,
+    pal:['#ff6b6b','#ffa94d','#ffd43b','#4cd68a','#38c4d9','#6c8cff','#b07cff','#f783ac'], note:'Bloques brillantes con relieve del paquete gratuito'},
 ];
 
 /* =====================================================================
@@ -2005,6 +2007,7 @@ if (!Array.isArray(P.owned.themes)) P.owned.themes = ['night', 'auto'];
 if (!P.owned.themes.includes('night')) P.owned.themes.push('night');
 if (!P.owned.themes.includes('auto')) P.owned.themes.push('auto');
 if (!P.owned.skins.includes(0)) P.owned.skins.push(0);
+if (!P.owned.skins.includes(15)) P.owned.skins.push(15); // Brillo 3D gratuito durante pruebas
 if (P.skin > 0 && !P.owned.skins.includes(P.skin)) P.owned.skins.push(P.skin);      // conserva la skin que ya usabas
 P.coins = Math.max(0, +P.coins || 0);
 // Perfil, estadísticas, logros y regalo diario (con valores por defecto para partidas ya guardadas)
@@ -2284,12 +2287,20 @@ function openShop(tab) {
 function closeShop() { shopEl.classList.add('hidden'); refreshCoins(); refreshBadges(); updateMChip(); }
 
 const thumbs = {};
-function skinThumb(i) {                               // vista previa real: se pinta con el mismo código que el juego
+function skinThumb(i) {
   if (thumbs[i]) return thumbs[i];
   const k = SKINS[i], B = 44, pad = cellPad(B, k.style, 1), W = B + pad * 2, c = document.createElement('canvas'), ds = 26 / B;
   c.width = W * 3; c.height = W;
   const x = c.getContext('2d');
-  [0, 3, 5].forEach((ci, j) => paintCell(x, j * W + pad, pad, B, k.pal[ci], k.style, 1));
+  [0, 3, 5].forEach((ci, j) => {
+    if (k.assetSet === 'blockPuzzleKit') {
+      const image = blockKitImage(k, k.pal[ci]);
+      if (image) x.drawImage(image, j * W + pad, pad, B, B);
+      else paintCell(x, j * W + pad, pad, B, k.pal[ci], 'gloss', 1);
+    } else {
+      paintCell(x, j * W + pad, pad, B, k.pal[ci], k.style, 1);
+    }
+  });
   return (thumbs[i] = { url: c.toDataURL(), w: Math.round(W * 3 * ds), h: Math.round(W * ds) });
 }
 function themePrev(th) {
@@ -3822,7 +3833,7 @@ function shade(hex, a) {
   shadeCache.set(key, out); return out;
 }
 // Margen extra del sprite: resplandor del Neón o sombra suave (calidad Alta)
-const cellPad = (B, st, q) => Math.ceil(B * (st === 'neon' ? (q >= 2 ? 0.55 : q === 1 ? 0.4 : 0) : q >= 2 ? 0.16 : 0));
+const cellPad = (B, st, q) => st === 'kit-glossy' ? 0 : Math.ceil(B * (st === 'neon' ? (q >= 2 ? 0.55 : q === 1 ? 0.4 : 0) : q >= 2 ? 0.16 : 0));
 // Pinta UNA celda en el contexto c (solo se usa para crear el sprite). q: 0 bajo · 1 medio · 2 alto
 function paintCell(c, x, y, s, color, st, q = 1) {
   const largeGrid = S.mode === 'lvl' || S.mode === 'inf';
@@ -4014,16 +4025,48 @@ function paintCell(c, x, y, s, color, st, q = 1) {
 }
 // Caché de sprites: cada celda se pinta UNA sola vez (los brillos y sombras no se recalculan por fotograma).
 const sprites = new Map(); let spriteB = 0;
+const BLOCK_KIT_COLORS = ['red','orange','yellow','green','cyan','blue','purple','pink'];
+const blockKitImages = new Map();
+let blockKitRefreshScheduled = false;
+function refreshBlockKitArt() {
+  if (blockKitRefreshScheduled) return;
+  blockKitRefreshScheduled = true;
+  requestAnimationFrame(() => {
+    blockKitRefreshScheduled = false;
+    sprites.clear();
+    tSpr.clear();
+    Object.keys(thumbs).forEach(k => delete thumbs[k]);
+    redraw();
+    if (!shopEl.classList.contains('hidden')) renderShop();
+  });
+}
+function blockKitImage(skin, color) {
+  if (!skin || skin.assetSet !== 'blockPuzzleKit') return null;
+  const index = Math.max(0, skin.pal.indexOf(color));
+  const name = BLOCK_KIT_COLORS[index] || 'blue';
+  let image = blockKitImages.get(name);
+  if (!image) {
+    image = new Image();
+    blockKitImages.set(name, image);
+    image.onload = refreshBlockKitArt;
+    image.onerror = () => blockKitImages.delete(name);
+    image.src = new URL(`assets/themes/block-puzzle-kit-free/art/glossy/hd/${name}.png`, document.baseURI).href;
+  }
+  return image.complete && image.naturalWidth > 0 ? image : null;
+}
 function sprite(color) {
   const B = Math.round(L.cell * dpr), st = SK().style, q = P.gfx;
   if (B !== spriteB) { sprites.clear(); spriteB = B; }          // se reconstruye si cambia el tamaño
   const largeGrid = (S.mode === 'lvl' || S.mode === 'inf') ? 'large' : 'standard';
-  const key = st + color + q + largeGrid;
+  const key = [SK().assetSet || 'procedural', st, color, q, largeGrid].join('|');
   let sp = sprites.get(key);
   if (!sp) {
     const pad = cellPad(B, st, q), cvs = document.createElement('canvas');
     cvs.width = cvs.height = B + pad * 2;
-    paintCell(cvs.getContext('2d'), pad, pad, B, color, st, q);
+    const c = cvs.getContext('2d');
+    const kitImage = blockKitImage(SK(), color);
+    if (kitImage) c.drawImage(kitImage, pad, pad, B, B);
+    else paintCell(c, pad, pad, B, color, st, q);
     sp = { cvs, pad }; sprites.set(key, sp);
   }
   return sp;
@@ -5021,11 +5064,14 @@ const tSpr = new Map(); let tSprB = 0;
 function tSprite(color) {
   const B = Math.round(TL.cell * tdpr), st = SK().style, q = P.gfx;
   if (B !== tSprB) { tSpr.clear(); tSprB = B; }
-  const key = st + color + q; let sp = tSpr.get(key);
+  const key = [SK().assetSet || 'procedural', st, color, q].join('|'); let sp = tSpr.get(key);
   if (!sp) {
     const pad = cellPad(B, st, q), cvs = document.createElement('canvas');
     cvs.width = cvs.height = B + pad * 2;
-    paintCell(cvs.getContext('2d'), pad, pad, B, color, st, q);
+    const c = cvs.getContext('2d');
+    const kitImage = blockKitImage(SK(), color);
+    if (kitImage) c.drawImage(kitImage, pad, pad, B, B);
+    else paintCell(c, pad, pad, B, color, st, q);
     sp = { cvs, pad }; tSpr.set(key, sp);
   }
   return sp;
