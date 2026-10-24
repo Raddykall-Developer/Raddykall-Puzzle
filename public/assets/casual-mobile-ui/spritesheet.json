@@ -1,0 +1,660 @@
+{
+ "meta": {
+  "name": "Casual Mobile UI Icons",
+  "tile_size": 128,
+  "columns": 10,
+  "rows": 9,
+  "image": "spritesheet.png",
+  "count": 81
+ },
+ "frames": {
+  "star_gold": {
+   "x": 0,
+   "y": 0,
+   "w": 128,
+   "h": 128,
+   "category": "stars",
+   "index": 0
+  },
+  "star_silver": {
+   "x": 128,
+   "y": 0,
+   "w": 128,
+   "h": 128,
+   "category": "stars",
+   "index": 1
+  },
+  "star_blue": {
+   "x": 256,
+   "y": 0,
+   "w": 128,
+   "h": 128,
+   "category": "stars",
+   "index": 2
+  },
+  "star_pink": {
+   "x": 384,
+   "y": 0,
+   "w": 128,
+   "h": 128,
+   "category": "stars",
+   "index": 3
+  },
+  "star_green": {
+   "x": 512,
+   "y": 0,
+   "w": 128,
+   "h": 128,
+   "category": "stars",
+   "index": 4
+  },
+  "star_red": {
+   "x": 640,
+   "y": 0,
+   "w": 128,
+   "h": 128,
+   "category": "stars",
+   "index": 5
+  },
+  "star_empty": {
+   "x": 768,
+   "y": 0,
+   "w": 128,
+   "h": 128,
+   "category": "stars",
+   "index": 6
+  },
+  "star_rounded": {
+   "x": 896,
+   "y": 0,
+   "w": 128,
+   "h": 128,
+   "category": "stars",
+   "index": 7
+  },
+  "star_burst": {
+   "x": 1024,
+   "y": 0,
+   "w": 128,
+   "h": 128,
+   "category": "stars",
+   "index": 8
+  },
+  "star_ribbon3": {
+   "x": 1152,
+   "y": 0,
+   "w": 128,
+   "h": 128,
+   "category": "stars",
+   "index": 9
+  },
+  "coin_gold": {
+   "x": 0,
+   "y": 128,
+   "w": 128,
+   "h": 128,
+   "category": "coins",
+   "index": 10
+  },
+  "coin_silver": {
+   "x": 128,
+   "y": 128,
+   "w": 128,
+   "h": 128,
+   "category": "coins",
+   "index": 11
+  },
+  "coin_bronze": {
+   "x": 256,
+   "y": 128,
+   "w": 128,
+   "h": 128,
+   "category": "coins",
+   "index": 12
+  },
+  "coin_star": {
+   "x": 384,
+   "y": 128,
+   "w": 128,
+   "h": 128,
+   "category": "coins",
+   "index": 13
+  },
+  "coin_blue": {
+   "x": 512,
+   "y": 128,
+   "w": 128,
+   "h": 128,
+   "category": "coins",
+   "index": 14
+  },
+  "coin_green": {
+   "x": 640,
+   "y": 128,
+   "w": 128,
+   "h": 128,
+   "category": "coins",
+   "index": 15
+  },
+  "coin_stack": {
+   "x": 768,
+   "y": 128,
+   "w": 128,
+   "h": 128,
+   "category": "coins",
+   "index": 16
+  },
+  "coin_bag": {
+   "x": 896,
+   "y": 128,
+   "w": 128,
+   "h": 128,
+   "category": "coins",
+   "index": 17
+  },
+  "gem_pile": {
+   "x": 1024,
+   "y": 128,
+   "w": 128,
+   "h": 128,
+   "category": "coins",
+   "index": 18
+  },
+  "heart_red": {
+   "x": 1152,
+   "y": 128,
+   "w": 128,
+   "h": 128,
+   "category": "hearts",
+   "index": 19
+  },
+  "heart_pink": {
+   "x": 0,
+   "y": 256,
+   "w": 128,
+   "h": 128,
+   "category": "hearts",
+   "index": 20
+  },
+  "heart_purple": {
+   "x": 128,
+   "y": 256,
+   "w": 128,
+   "h": 128,
+   "category": "hearts",
+   "index": 21
+  },
+  "heart_blue": {
+   "x": 256,
+   "y": 256,
+   "w": 128,
+   "h": 128,
+   "category": "hearts",
+   "index": 22
+  },
+  "heart_green": {
+   "x": 384,
+   "y": 256,
+   "w": 128,
+   "h": 128,
+   "category": "hearts",
+   "index": 23
+  },
+  "heart_gold": {
+   "x": 512,
+   "y": 256,
+   "w": 128,
+   "h": 128,
+   "category": "hearts",
+   "index": 24
+  },
+  "heart_empty": {
+   "x": 640,
+   "y": 256,
+   "w": 128,
+   "h": 128,
+   "category": "hearts",
+   "index": 25
+  },
+  "heart_half": {
+   "x": 768,
+   "y": 256,
+   "w": 128,
+   "h": 128,
+   "category": "hearts",
+   "index": 26
+  },
+  "heart_plus": {
+   "x": 896,
+   "y": 256,
+   "w": 128,
+   "h": 128,
+   "category": "hearts",
+   "index": 27
+  },
+  "heart_shield": {
+   "x": 1024,
+   "y": 256,
+   "w": 128,
+   "h": 128,
+   "category": "hearts",
+   "index": 28
+  },
+  "gem_blue": {
+   "x": 1152,
+   "y": 256,
+   "w": 128,
+   "h": 128,
+   "category": "gems",
+   "index": 29
+  },
+  "gem_red": {
+   "x": 0,
+   "y": 384,
+   "w": 128,
+   "h": 128,
+   "category": "gems",
+   "index": 30
+  },
+  "gem_green": {
+   "x": 128,
+   "y": 384,
+   "w": 128,
+   "h": 128,
+   "category": "gems",
+   "index": 31
+  },
+  "gem_purple": {
+   "x": 256,
+   "y": 384,
+   "w": 128,
+   "h": 128,
+   "category": "gems",
+   "index": 32
+  },
+  "gem_orange": {
+   "x": 384,
+   "y": 384,
+   "w": 128,
+   "h": 128,
+   "category": "gems",
+   "index": 33
+  },
+  "gem_cyan": {
+   "x": 512,
+   "y": 384,
+   "w": 128,
+   "h": 128,
+   "category": "gems",
+   "index": 34
+  },
+  "gem_pink": {
+   "x": 640,
+   "y": 384,
+   "w": 128,
+   "h": 128,
+   "category": "gems",
+   "index": 35
+  },
+  "gem_round": {
+   "x": 768,
+   "y": 384,
+   "w": 128,
+   "h": 128,
+   "category": "gems",
+   "index": 36
+  },
+  "crystal": {
+   "x": 896,
+   "y": 384,
+   "w": 128,
+   "h": 128,
+   "category": "gems",
+   "index": 37
+  },
+  "medal_gold": {
+   "x": 1024,
+   "y": 384,
+   "w": 128,
+   "h": 128,
+   "category": "badges",
+   "index": 38
+  },
+  "medal_silver": {
+   "x": 1152,
+   "y": 384,
+   "w": 128,
+   "h": 128,
+   "category": "badges",
+   "index": 39
+  },
+  "medal_bronze": {
+   "x": 0,
+   "y": 512,
+   "w": 128,
+   "h": 128,
+   "category": "badges",
+   "index": 40
+  },
+  "laurel_star": {
+   "x": 128,
+   "y": 512,
+   "w": 128,
+   "h": 128,
+   "category": "badges",
+   "index": 41
+  },
+  "shield_blue": {
+   "x": 256,
+   "y": 512,
+   "w": 128,
+   "h": 128,
+   "category": "badges",
+   "index": 42
+  },
+  "shield_red": {
+   "x": 384,
+   "y": 512,
+   "w": 128,
+   "h": 128,
+   "category": "badges",
+   "index": 43
+  },
+  "crown": {
+   "x": 512,
+   "y": 512,
+   "w": 128,
+   "h": 128,
+   "category": "badges",
+   "index": 44
+  },
+  "trophy": {
+   "x": 640,
+   "y": 512,
+   "w": 128,
+   "h": 128,
+   "category": "badges",
+   "index": 45
+  },
+  "ribbon_blue": {
+   "x": 768,
+   "y": 512,
+   "w": 128,
+   "h": 128,
+   "category": "badges",
+   "index": 46
+  },
+  "ribbon_red": {
+   "x": 896,
+   "y": 512,
+   "w": 128,
+   "h": 128,
+   "category": "badges",
+   "index": 47
+  },
+  "level_up": {
+   "x": 1024,
+   "y": 512,
+   "w": 128,
+   "h": 128,
+   "category": "badges",
+   "index": 48
+  },
+  "new_tag": {
+   "x": 1152,
+   "y": 512,
+   "w": 128,
+   "h": 128,
+   "category": "badges",
+   "index": 49
+  },
+  "button_green": {
+   "x": 0,
+   "y": 640,
+   "w": 128,
+   "h": 128,
+   "category": "buttons",
+   "index": 50
+  },
+  "button_blue": {
+   "x": 128,
+   "y": 640,
+   "w": 128,
+   "h": 128,
+   "category": "buttons",
+   "index": 51
+  },
+  "button_red": {
+   "x": 256,
+   "y": 640,
+   "w": 128,
+   "h": 128,
+   "category": "buttons",
+   "index": 52
+  },
+  "button_orange": {
+   "x": 384,
+   "y": 640,
+   "w": 128,
+   "h": 128,
+   "category": "buttons",
+   "index": 53
+  },
+  "button_purple": {
+   "x": 512,
+   "y": 640,
+   "w": 128,
+   "h": 128,
+   "category": "buttons",
+   "index": 54
+  },
+  "button_gold": {
+   "x": 640,
+   "y": 640,
+   "w": 128,
+   "h": 128,
+   "category": "buttons",
+   "index": 55
+  },
+  "button_silver": {
+   "x": 768,
+   "y": 640,
+   "w": 128,
+   "h": 128,
+   "category": "buttons",
+   "index": 56
+  },
+  "button_cyan": {
+   "x": 896,
+   "y": 640,
+   "w": 128,
+   "h": 128,
+   "category": "buttons",
+   "index": 57
+  },
+  "btn_play": {
+   "x": 1024,
+   "y": 640,
+   "w": 128,
+   "h": 128,
+   "category": "icons",
+   "index": 58
+  },
+  "btn_pause": {
+   "x": 1152,
+   "y": 640,
+   "w": 128,
+   "h": 128,
+   "category": "icons",
+   "index": 59
+  },
+  "btn_close": {
+   "x": 0,
+   "y": 768,
+   "w": 128,
+   "h": 128,
+   "category": "icons",
+   "index": 60
+  },
+  "btn_check": {
+   "x": 128,
+   "y": 768,
+   "w": 128,
+   "h": 128,
+   "category": "icons",
+   "index": 61
+  },
+  "btn_plus": {
+   "x": 256,
+   "y": 768,
+   "w": 128,
+   "h": 128,
+   "category": "icons",
+   "index": 62
+  },
+  "btn_gear": {
+   "x": 384,
+   "y": 768,
+   "w": 128,
+   "h": 128,
+   "category": "icons",
+   "index": 63
+  },
+  "btn_home": {
+   "x": 512,
+   "y": 768,
+   "w": 128,
+   "h": 128,
+   "category": "icons",
+   "index": 64
+  },
+  "btn_sound": {
+   "x": 640,
+   "y": 768,
+   "w": 128,
+   "h": 128,
+   "category": "icons",
+   "index": 65
+  },
+  "btn_lock": {
+   "x": 768,
+   "y": 768,
+   "w": 128,
+   "h": 128,
+   "category": "icons",
+   "index": 66
+  },
+  "btn_heart": {
+   "x": 896,
+   "y": 768,
+   "w": 128,
+   "h": 128,
+   "category": "icons",
+   "index": 67
+  },
+  "btn_star": {
+   "x": 1024,
+   "y": 768,
+   "w": 128,
+   "h": 128,
+   "category": "icons",
+   "index": 68
+  },
+  "btn_gift": {
+   "x": 1152,
+   "y": 768,
+   "w": 128,
+   "h": 128,
+   "category": "icons",
+   "index": 69
+  },
+  "btn_shop": {
+   "x": 0,
+   "y": 896,
+   "w": 128,
+   "h": 128,
+   "category": "icons",
+   "index": 70
+  },
+  "chest": {
+   "x": 128,
+   "y": 896,
+   "w": 128,
+   "h": 128,
+   "category": "icons",
+   "index": 71
+  },
+  "key_gold": {
+   "x": 256,
+   "y": 896,
+   "w": 128,
+   "h": 128,
+   "category": "icons",
+   "index": 72
+  },
+  "energy_bolt": {
+   "x": 384,
+   "y": 896,
+   "w": 128,
+   "h": 128,
+   "category": "icons",
+   "index": 73
+  },
+  "clock": {
+   "x": 512,
+   "y": 896,
+   "w": 128,
+   "h": 128,
+   "category": "icons",
+   "index": 74
+  },
+  "bomb": {
+   "x": 640,
+   "y": 896,
+   "w": 128,
+   "h": 128,
+   "category": "icons",
+   "index": 75
+  },
+  "rocket": {
+   "x": 768,
+   "y": 896,
+   "w": 128,
+   "h": 128,
+   "category": "icons",
+   "index": 76
+  },
+  "magnet": {
+   "x": 896,
+   "y": 896,
+   "w": 128,
+   "h": 128,
+   "category": "icons",
+   "index": 77
+  },
+  "sparkle": {
+   "x": 1024,
+   "y": 896,
+   "w": 128,
+   "h": 128,
+   "category": "icons",
+   "index": 78
+  },
+  "ticket": {
+   "x": 1152,
+   "y": 896,
+   "w": 128,
+   "h": 128,
+   "category": "icons",
+   "index": 79
+  },
+  "potion_mana": {
+   "x": 0,
+   "y": 1024,
+   "w": 128,
+   "h": 128,
+   "category": "icons",
+   "index": 80
+  }
+ }
+}
