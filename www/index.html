@@ -2234,6 +2234,21 @@ html[data-gtheme="sunset"] #shop,html[data-gtheme="sunset"] #page{
 @media(prefers-reduced-motion:reduce){html[data-gtheme] body{background-attachment:scroll}}
 </style>
 
+
+<style id="raddykall-admob-banner-safe-area">
+/* Reserve space for the anchored native AdMob banner once it has loaded, so controls remain tappable. */
+body.admob-banner-active #app{
+  height:calc(100% - 64px - env(safe-area-inset-bottom,0px)) !important;
+  max-height:calc(100% - 64px - env(safe-area-inset-bottom,0px)) !important;
+}
+@media(max-height:600px){
+  body.admob-banner-active #app{
+    height:calc(100% - 56px - env(safe-area-inset-bottom,0px)) !important;
+    max-height:calc(100% - 56px - env(safe-area-inset-bottom,0px)) !important;
+  }
+}
+</style>
+
 </head>
 <body>
 <div id="bg"><i></i><i></i><i></i><i></i><i class="hb"></i><i class="hb"></i><i class="sp" style="left:44%;top:22%;animation-delay:-1.6s;animation-duration:2.7s"></i><i class="sp" style="left:71%;top:15%;animation-delay:-1.5s;animation-duration:2.7s"></i><i class="sp" style="left:67%;top:30%;animation-delay:-0.1s;animation-duration:3.6s"></i><i class="sp" style="left:11%;top:33%;animation-delay:-0.4s;animation-duration:3.6s"></i><i class="sp" style="left:75%;top:18%;animation-delay:-3.8s;animation-duration:4.1s"></i><i class="sp" style="left:77%;top:10%;animation-delay:-2.3s;animation-duration:3.6s"></i><i class="sp" style="left:31%;top:8%;animation-delay:-2.2s;animation-duration:2.9s"></i><i class="sp" style="left:56%;top:21%;animation-delay:-2.2s;animation-duration:4.0s"></i><i class="sp" style="left:74%;top:90%;animation-delay:-0.7s;animation-duration:4.0s"></i><i class="sp" style="left:84%;top:27%;animation-delay:-1.5s;animation-duration:3.9s"></i><i class="sp" style="left:11%;top:75%;animation-delay:-0.2s;animation-duration:3.1s"></i><i class="sp" style="left:90%;top:71%;animation-delay:-1.7s;animation-duration:3.4s"></i><i class="sp" style="left:77%;top:61%;animation-delay:-1.4s;animation-duration:3.2s"></i><i class="sp" style="left:26%;top:92%;animation-delay:-3.1s;animation-duration:2.8s"></i></div>
@@ -3174,6 +3189,8 @@ function achHtml() {
   return `<div class="bonus" style="text-align:left;padding:6px 2px 10px">Desbloqueados: <b>${achCount()}/${ACH.length}</b></div>${rows}`;
 }
 function settingsHtml() {
+  const privacyLabel = ({es:'Preferencias de anuncios',en:'Ad privacy options',it:'Opzioni privacy annunci',fr:'Options de confidentialité des annonces'})[P.lang] || 'Preferencias de anuncios';
+  const privacyOptionsRow = window.__raddykallAdmobPrivacyRequired ? `<button class="set-btn" data-a="admob_privacy"><span>${privacyLabel}</span><em>›</em></button>` : '';
   return `<div class="set-sec">Sonido</div>
     <div class="dock">${dockBtns()}</div>
     <div class="set-row"><span>Volumen de la música</span><input type="range" data-v="mv" min="0" max="1" step="0.05" value="${P.mv}"></div>
@@ -3186,6 +3203,7 @@ function settingsHtml() {
     <button class="set-btn" data-a="gfx">${ICON.gfx}<span>Gráficos</span><em><b class="gfxcur">${G.name}</b> ›</em></button>
     <button class="set-btn" data-a="tut">${ICON.help}<span>Cómo jugar</span><em>›</em></button>
     <div class="set-sec">Información</div>
+    ${privacyOptionsRow}
     <button class="set-btn" data-a="m_legal" data-k="privacy"><span>Política de privacidad</span><em>›</em></button>
     <button class="set-btn" data-a="m_legal" data-k="terms"><span>Términos de uso</span><em>›</em></button>
     <button class="set-btn" data-a="m_legal" data-k="about"><span>Acerca de</span><em>›</em></button>
@@ -3220,7 +3238,8 @@ function showLegal(k) {
   const link = CONFIG.PRIVACY_URL ? `<p><a href="${CONFIG.PRIVACY_URL}" target="_blank" rel="noopener">Leer la política de privacidad completa</a></p>` : '';
   const T_ = {
     privacy: ['Política de privacidad', `<p><b>Resumen.</b> Raddykall Puzzle guarda tu progreso (monedas, estrellas, compras y ajustes) únicamente en tu dispositivo. No pide cuenta ni datos personales.</p>
-      <p>Esta versión guarda el progreso y las preferencias localmente en el dispositivo y no necesita una cuenta. No muestra anuncios hasta que la aplicación contenedora integre un proveedor publicitario real. Si se incorporan servicios externos, esta política deberá actualizarse antes de publicar esa versión.</p>${link}`],
+      <p>Esta versión guarda el progreso y las preferencias del juego localmente en el dispositivo y no necesita una cuenta. También utiliza Google AdMob para mostrar banners publicitarios. Según el consentimiento, la configuración de anuncios y la legislación aplicable, Google y sus socios pueden tratar datos como identificadores publicitarios, dirección IP, información del dispositivo, diagnósticos y las interacciones con los anuncios para servirlos, medir su rendimiento, limitar su frecuencia y prevenir fraude.</p>
+      <p>La aplicación solicita la información de consentimiento mediante Google UMP cuando se inicia. Si aparece “Preferencias de anuncios” en Ajustes, puedes abrirla para revisar las opciones disponibles. Más información: <a href="https://policies.google.com/privacy" target="_blank" rel="noopener">Política de privacidad de Google</a> y <a href="https://support.google.com/admob/answer/6128543" target="_blank" rel="noopener">Políticas de AdMob</a>.</p>${link}`],
     terms: ['Términos de uso', `<p>Raddykall Puzzle es de uso personal y gratuito. Las monedas y los artículos de la tienda son virtuales: no tienen valor real, no se pueden transferir ni canjear por dinero.</p>
       <p>Si restableces el progreso o desinstalas la aplicación, se pierden los datos guardados en tu dispositivo.</p>`],
     about: ['Acerca de', `<p><b>Raddykall Puzzle</b><br>Versión ${CONFIG.APP_VERSION}</p>
@@ -3265,7 +3284,11 @@ function metaAction(a, d) {
   else if (a === 'm_reset') resetAsk();
   else if (a === 'm_resetok') resetDo();
   else if (a === 'm_legal') showLegal(d.k);
+  else if (a === 'admob_privacy') window.dispatchEvent(new Event('raddykall:show-admob-privacy-options'));
 }
+window.addEventListener('raddykall:admob-privacy-required', () => {
+  if (pageKind === 'settings') renderPage('settings');
+});
 
 
 /* ---------- Menú principal: barra de perfil y navegación inferior ---------- */
@@ -6314,5 +6337,6 @@ $('mchip').onclick = () => { sfx.click(); openShop('missions'); };
 })();
 </script>
 
+  <script type="module" src="./admob.js"></script>
 </body>
 </html>

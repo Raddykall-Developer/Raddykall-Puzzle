@@ -53,7 +53,9 @@ jobs:
           grep -q "Skyboxes Space (1.0)" public/assets/kenney-skyboxes-space/License.txt
           echo "OK: sprites, iconos, partículas, skyboxes optimizados y licencias presentes"
 
-      - name: Construir el juego web
+      - name: Construir el juego web con anuncios de prueba
+        env:
+          VITE_ADMOB_TEST_ADS: 'true'
         run: npm run build
 
       - name: Preparar Java
@@ -81,6 +83,9 @@ jobs:
 
       - name: Sincronizar los archivos del juego
         run: npx cap sync android
+
+      - name: Configurar ID de aplicación de AdMob
+        run: node scripts/configure-admob-android.mjs
 
       - name: Compilar APK de prueba
         working-directory: android

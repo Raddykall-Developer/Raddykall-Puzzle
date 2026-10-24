@@ -17,3 +17,4 @@ Los recursos de `public/assets/themes/block-puzzle-kit-free/` proceden de Block 
 
 6. Herramientas
 Capacitor, Vite, Pillow y GitHub Actions son herramientas de terceros y conservan sus propias licencias y términos. Este proyecto no afirma estar afiliado oficialmente con ellas.
+\n6. Google Mobile Ads / AdMob\nLa integración utiliza el plugin comunitario `@capacitor-community/admob` v7.2.0 (licencia MIT), que integra Google Mobile Ads SDK y Google User Messaging Platform (UMP). Los identificadores de aplicación y unidad publicitaria de AdMob pertenecen al editor de la aplicación. La APK de prueba del flujo de GitHub Actions usa el identificador de banner de prueba oficial de Google; el identificador de producción queda configurado en el módulo y solo debe activarse para una compilación de producción una vez completadas las pruebas y el consentimiento.\n
