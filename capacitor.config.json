@@ -1,0 +1,9 @@
+{
+  "appId": "com.raddykall.puzzledeluxe",
+  "appName": "Raddykall Puzzle Deluxe",
+  "webDir": "dist",
+  "bundledWebRuntime": false,
+  "android": {
+    "allowMixedContent": false
+  }
+}
