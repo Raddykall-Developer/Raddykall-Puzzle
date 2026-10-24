@@ -64,7 +64,7 @@ def centered(source: Image.Image, size: int, fill: tuple[int, int, int, int], sc
 
 def save_adaptive_xml(path: Path, round_icon: bool = False) -> None:
     tag = "adaptive-icon"
-    root = ET.Element(tag, {f"{{{ANDROID_NS}}}xmlns": ANDROID_NS})
+    root = ET.Element(tag)
     ET.SubElement(root, "background", {f"{{{ANDROID_NS}}}drawable": "@color/ic_launcher_background"})
     ET.SubElement(root, "foreground", {f"{{{ANDROID_NS}}}drawable": "@mipmap/ic_launcher_foreground"})
     ET.indent(root, space="    ")
