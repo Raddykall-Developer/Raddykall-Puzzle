@@ -2247,6 +2247,90 @@ body.admob-banner-active #app{
     max-height:calc(100% - 56px - env(safe-area-inset-bottom,0px)) !important;
   }
 }
+
+/* ===== POLISH UI v1.7: legibilidad, contraste y partículas cromáticas ===== */
+:root{
+ --text:#f7f8ff; --muted:#c2cbed; --card:#202b50; --board:#263454;
+ --ad-bg:rgba(20,30,61,.96); --ad-line:#6c8dd5; --accent:#72e5ff;
+}
+body{color:#f7f8ff;text-shadow:none}
+#hud,.panel,.card,.sheet,.tool,.hbtn,.nav button,.coinchip,.rk-ad-slot{
+ text-shadow:none;
+}
+#score,#best,#lvl,#time,#goal,.gt,#tools,.tool,.tool small,
+#home .nav small,#home .ver,.sh-title,.sh-title small,.row,.grp,
+.sheet-head,.sheet-head button,.card h1,.card h2,.card p{
+ text-shadow:0 1px 2px rgba(3,8,24,.72);
+}
+#time,#goal,.gt,#best,.muted,.sh-title small,.grp,.row small{
+ color:#d2dcf5;
+}
+#home{
+ color:#fff;
+ background:
+ radial-gradient(ellipse at 15% 17%,rgba(43,220,255,.28),transparent 28%),
+ radial-gradient(ellipse at 88% 22%,rgba(255,92,184,.22),transparent 30%),
+ radial-gradient(ellipse at 74% 72%,rgba(122,93,255,.30),transparent 34%),
+ radial-gradient(ellipse at 25% 86%,rgba(255,177,66,.16),transparent 30%),
+ linear-gradient(155deg,#14274b 0%,#202052 48%,#29144b 100%);
+}
+#home .hm{max-width:390px;gap:12px}
+#home .hbtn{
+ min-height:76px;padding:14px 17px;border-radius:22px;
+ border:1px solid rgba(255,255,255,.38);
+ box-shadow:0 5px 0 rgba(5,13,38,.55),0 12px 24px rgba(0,0,0,.22),inset 0 2px 0 rgba(255,255,255,.44);
+ color:#fff;font-weight:850;letter-spacing:.1px;
+}
+#home .hbtn strong,#home .hbtn b,#home .hbtn span{color:#fff}
+#home .hbtn small,#home .hbtn .sub{color:#f1f5ff;opacity:1}
+#home .hbtn:focus-visible,#home .nav button:focus-visible{outline:3px solid #fff;outline-offset:3px}
+#home .nav{gap:8px;margin-top:7px}
+#home .nav button{
+ min-height:68px;border:1px solid rgba(205,222,255,.48);
+ background:linear-gradient(160deg,rgba(104,132,190,.40),rgba(27,36,76,.90));
+ box-shadow:0 4px 0 rgba(5,10,32,.42),inset 0 1px 0 rgba(255,255,255,.24);
+ color:#fff;
+}
+#home .nav small{font-size:11px;color:#fff;font-weight:800}
+#home .ver{color:#d9e4ff;font-weight:650}
+#home .fall i{
+ opacity:.30!important;filter:blur(.1px) saturate(1.5);
+ box-shadow:0 0 18px currentColor;
+}
+#home .fall i:nth-child(4n){background:#42dcff!important;box-shadow:0 0 22px #42dcff}
+#home .fall i:nth-child(4n + 1){background:#ff75cf!important;box-shadow:0 0 22px #ff75cf}
+#home .fall i:nth-child(4n + 2){background:#b38bff!important;box-shadow:0 0 22px #b38bff}
+#home .fall i:nth-child(4n + 3){background:#ffd36c!important;box-shadow:0 0 22px #ffd36c}
+#hud{
+ background:linear-gradient(135deg,rgba(43,60,102,.97),rgba(20,29,61,.98));
+ border:1px solid rgba(179,207,255,.48);
+ box-shadow:0 8px 22px rgba(0,0,0,.24),inset 0 1px 0 rgba(255,255,255,.16);
+}
+#score{color:#fff;text-shadow:0 2px 8px rgba(0,0,0,.32)}
+#best{color:#dce6ff}
+#time,#goal{color:#e2eaff}
+#time span,#goal .gt b{color:#fff}
+#goal i,#time i{background:#101a37;border:1px solid rgba(179,205,255,.22)}
+#banner,#tbanner,.rk-ad-home,.rk-ad-shop{
+ border:1px solid rgba(151,185,255,.60)!important;
+ border-radius:18px!important;
+ background:linear-gradient(135deg,rgba(28,43,83,.98),rgba(20,26,58,.98))!important;
+ color:#fff!important;
+ box-shadow:0 5px 16px rgba(0,0,0,.18),inset 0 1px 0 rgba(255,255,255,.14);
+}
+.rk-ad-home{min-height:58px;padding:8px 12px}
+.rk-ad-label{font-size:10px!important;color:#b8eaff!important;letter-spacing:1.8px}
+.rk-ad-message{font-size:12px!important;color:#fff!important;font-weight:750!important}
+#shop,#page{color:#f7f8ff}
+.sh-head,.sheet-head{color:#fff}
+.sh-title h2,.sh-head h2,.sheet-head h2,.grp{color:#fff}
+.row{color:#edf2ff}
+button{color:inherit}
+button:active{filter:brightness(1.12)}
+@media (prefers-reduced-motion:reduce){
+ #home .fall i{animation-duration:60s!important}
+}
+
 </style>
 
 </head>
