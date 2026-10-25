@@ -1,0 +1,56 @@
+name: APK de prueba - reconstruccion Phaser
+
+on:
+  push:
+    branches:
+      - rebuild/phaser-mobile-prototype
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-apk:
+    name: Build APK debug para Android
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout de la rama nueva
+        uses: actions/checkout@v4
+
+      - name: Preparar Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Preparar Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Compilar juego Phaser
+        run: npm run build
+
+      - name: Crear proyecto Android de prueba
+        run: npx cap add android
+
+      - name: Sincronizar app nativa
+        run: npx cap sync android
+
+      - name: Compilar APK debug
+        working-directory: android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug
+
+      - name: Publicar APK descargable
+        uses: actions/upload-artifact@v4
+        with:
+          name: Raddykall-Phaser-prototipo-APK-debug
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 14
