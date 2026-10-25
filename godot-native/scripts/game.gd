@@ -23,6 +23,7 @@ var selected_piece := -1
 var score := 0
 var turn := 0
 var score_label: Label
+var turn_label: Label
 var status_label: Label
 var board_grid: GridContainer
 var tray: HBoxContainer
@@ -80,7 +81,9 @@ func _build_ui() -> void:
 	subtitle.add_theme_font_size_override("font_size", 10)
 	subtitle.add_theme_color_override("font_color", Color("#9DAED7"))
 	brand.add_child(subtitle)
-	var pause := _make_button("Ⅱ", Color("#27365E"), 48)
+	var pause := _make_button("", Color("#27365E"), 48)
+	pause.icon = load("res://assets/ui/btn_pause.png")
+	pause.expand_icon = true
 	pause.pressed.connect(_show_pause)
 	header.add_child(pause)
 
@@ -104,12 +107,11 @@ func _build_ui() -> void:
 	score_label.add_theme_font_size_override("font_size", 29)
 	score_label.add_theme_color_override("font_color", Color.WHITE)
 	score_info.add_child(score_label)
-	var turn_caption := Label.new()
-	turn_caption.name = "TurnCaption"
-	turn_caption.text = "TURNO 01"
+	turn_label = Label.new()
+	turn_label.text = "TURNO 01"
 	turn_caption.add_theme_font_size_override("font_size", 11)
 	turn_caption.add_theme_color_override("font_color", Color("#7DEBFF"))
-	score_row.add_child(turn_caption)
+	score_row.add_child(turn_label)
 
 	var status_panel := PanelContainer.new()
 	status_panel.add_theme_stylebox_override("panel", _panel_style(Color("#10213B"), Color("#263F6C"), 12))
@@ -168,15 +170,19 @@ func _build_ui() -> void:
 	var nav := HBoxContainer.new()
 	nav.add_theme_constant_override("separation", 8)
 	root.add_child(nav)
-	var mission := _make_button("✦  Misiones", Color("#273B70"), 44)
+	var mission := _make_button("Misiones", Color("#273B70"), 44)
+	mission.icon = load("res://assets/ui/btn_star.png")
 	mission.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	mission.pressed.connect(func(): _set_status("Misiones: objetivos diarios en preparación."))
 	nav.add_child(mission)
-	var shop := _make_button("▣  Tienda", Color("#225A66"), 44)
+	var shop := _make_button("Tienda", Color("#225A66"), 44)
+	shop.icon = load("res://assets/ui/btn_shop.png")
+	shop.expand_icon = false
 	shop.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	shop.pressed.connect(func(): _set_status("Tienda: catálogo visual en construcción."))
 	nav.add_child(shop)
-	var settings := _make_button("⚙  Ajustes", Color("#49366D"), 44)
+	var settings := _make_button("Ajustes", Color("#49366D"), 44)
+	settings.icon = load("res://assets/ui/btn_gear.png")
 	settings.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	settings.pressed.connect(func(): _set_status("Ajustes: controles nativos en construcción."))
 	nav.add_child(settings)
@@ -295,9 +301,7 @@ func _on_cell_pressed(x: int, y: int) -> void:
 	var cleared := _clear_complete_lines()
 	score += cleared * SIZE * 2
 	score_label.text = str(score)
-	var turn_caption := get_node_or_null("MarginContainer/VBoxContainer/PanelContainer/HBoxContainer/TurnCaption")
-	if turn_caption is Label:
-		turn_caption.text = "TURNO %02d" % (turn + 1)
+	turn_label.text = "TURNO %02d" % (turn + 1)
 	_set_status("¡Bien! +%d puntos%s" % [shape.size(), " · líneas despejadas: %d" % cleared if cleared > 0 else ""])
 	selected_piece = -1
 	if pieces.all(func(p): return bool(p.used)):
