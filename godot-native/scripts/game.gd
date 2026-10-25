@@ -15,7 +15,7 @@ const SHAPES: Array[Array] = [
 	[[0,0],[1,0],[2,0],[0,1],[1,1]]
 ]
 
-var grid: Array = []
+var model := PuzzleModel.new()
 var cells: Array[Button] = []
 var piece_buttons: Array[Button] = []
 var pieces: Array[Dictionary] = []
@@ -33,11 +33,6 @@ var rng := RandomNumberGenerator.new()
 
 func _ready() -> void:
 	rng.randomize()
-	for y in SIZE:
-		var row: Array = []
-		for x in SIZE:
-			row.append(-1)
-		grid.append(row)
 	_build_ui()
 	_new_pieces()
 	_refresh_board()
@@ -287,14 +282,10 @@ func _on_cell_pressed(x: int, y: int) -> void:
 		return
 	var piece: Dictionary = pieces[selected_piece]
 	var shape: Array = piece.shape
-	for point in shape:
-		var px := x + int(point[0])
-		var py := y + int(point[1])
-		if px < 0 or py < 0 or px >= SIZE or py >= SIZE or grid[py][px] != -1:
-			_set_status("Esa posición no cabe. Prueba otra casilla.")
-			return
-	for point in shape:
-		grid[y + int(point[1])][x + int(point[0])] = CELL_COLORS.find(piece.color) + 1
+	var value := CELL_COLORS.find(piece.color) + 1
+	if not model.place(shape, x, y, value):
+		_set_status("Esa posición no cabe. Prueba otra casilla.")
+		return
 	piece.used = true
 	score += shape.size()
 	turn += 1
@@ -313,48 +304,10 @@ func _on_cell_pressed(x: int, y: int) -> void:
 		_set_status("No hay movimientos disponibles. Reinicia para volver a jugar.")
 
 func _clear_complete_lines() -> int:
-	var rows_to_clear: Array[int] = []
-	var cols_to_clear: Array[int] = []
-	for y in SIZE:
-		var full := true
-		for x in SIZE:
-			if grid[y][x] == -1:
-				full = false
-				break
-		if full:
-			rows_to_clear.append(y)
-	for x in SIZE:
-		var full := true
-		for y in SIZE:
-			if grid[y][x] == -1:
-				full = false
-				break
-		if full:
-			cols_to_clear.append(x)
-	for y in rows_to_clear:
-		for x in SIZE:
-			grid[y][x] = -1
-	for x in cols_to_clear:
-		for y in SIZE:
-			grid[y][x] = -1
-	return rows_to_clear.size() + cols_to_clear.size()
+	return model.clear_complete_lines()
 
 func _has_any_move() -> bool:
-	for piece in pieces:
-		if piece.used:
-			continue
-		for y in SIZE:
-			for x in SIZE:
-				var fits := true
-				for point in piece.shape:
-					var px := x + int(point[0])
-					var py := y + int(point[1])
-					if px >= SIZE or py >= SIZE or grid[py][px] != -1:
-						fits = false
-						break
-				if fits:
-					return true
-	return false
+	return model.has_any_move(pieces)
 
 func _refresh_board() -> void:
 	for y in SIZE:
