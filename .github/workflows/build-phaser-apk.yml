@@ -1,0 +1,54 @@
+name: Build APK de prueba Phaser
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - rebuild/phaser-mobile-prototype
+    paths:
+      - 'prototype-phaser/**'
+      - '.github/workflows/build-phaser-apk.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  android-debug-apk:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: prototype-phaser
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Preparar Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: prototype-phaser/package-lock.json
+      - name: Preparar Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Instalar dependencias
+        run: npm install --no-audit --no-fund
+      - name: Compilar juego web
+        run: npm run build
+      - name: Crear proyecto Android y sincronizar
+        run: |
+          npx cap add android
+          npx cap sync android
+      - name: Compilar APK debug
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon
+      - name: Publicar APK para descargar
+        uses: actions/upload-artifact@v4
+        with:
+          name: Raddykall-Phaser-Preview-APK
+          path: prototype-phaser/android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 14
