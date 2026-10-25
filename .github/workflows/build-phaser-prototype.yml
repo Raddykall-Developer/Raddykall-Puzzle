@@ -1,0 +1,31 @@
+name: Validar prototipo Phaser
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - rebuild/phaser-mobile-prototype
+    paths:
+      - 'prototype-phaser/**'
+      - '.github/workflows/build-phaser-prototype.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  build-prototype:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: prototype-phaser
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Preparar Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Instalar dependencias
+        run: npm install --no-audit --no-fund
+      - name: Construir prototipo
+        run: npm run build
