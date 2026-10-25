@@ -12,7 +12,7 @@ const SHAPES = [
 const COLORS = [0x58d6ff,0x56e6a5,0xffbd68,0xff719f,0x9d8aff,0xffe16a];
 
 class PuzzleScene extends Phaser.Scene {
-  constructor(){ super('puzzle'); this.grid = Array.from({length:ROWS},()=>Array(COLS).fill(0)); this.score=0; this.turn=0; this.pieces=[]; this.drag=null; }
+  constructor(){ super('puzzle'); this.grid = Array.from({length:ROWS},()=>Array(COLS).fill(0)); this.score=0; this.turn=0; this.pieces=[]; this.drag=null; this.navTexts=[]; this.statusMessage='Arrastra una pieza al tablero'; }
   create(){
     this.cameras.main.setBackgroundColor('#090f25');
     this.bg = this.add.graphics().setDepth(-10);
@@ -74,6 +74,7 @@ class PuzzleScene extends Phaser.Scene {
     this.ui.fillStyle(0x151f3b,1); this.ui.fillRoundedRect(12,ay+8,w-24,this.adH-16,10);
     this.ui.lineStyle(1,0x34466f,.8); this.ui.strokeRoundedRect(12,ay+8,w-24,this.adH-16,10);
     this.adText?.destroy();
+    this.navTexts.forEach(t=>t.destroy()); this.navTexts=[];
     this.adText=this.add.text(w/2,ay+this.adH/2,'ESPACIO PUBLICITARIO · FIJO ABAJO',{fontFamily:'system-ui,sans-serif',fontSize:'10px',fontStyle:'bold',color:'#8291ba',letterSpacing:1}).setOrigin(.5).setDepth(20);
     // Simple navigation lives above the ad dock.
     this.navY=ay-this.navH;
@@ -83,11 +84,11 @@ class PuzzleScene extends Phaser.Scene {
     labels.forEach((label,i)=>{
       const x=w*(i+.5)/3;
       this.ui.fillStyle(i===0?0x263c73:0x192749,1); this.ui.fillRoundedRect(x-w/6+5,this.navY+7,w/3-10,40,12);
-      this.add.text(x,this.navY+27,label,{fontFamily:'system-ui,sans-serif',fontSize:'11px',fontStyle:'bold',color:'#e3ebff'}).setOrigin(.5).setDepth(15).setName('nav-'+i);
+      this.navTexts.push(this.add.text(x,this.navY+27,label,{fontFamily:'system-ui,sans-serif',fontSize:'11px',fontStyle:'bold',color:'#e3ebff'}).setOrigin(.5).setDepth(15).setName('nav-'+i));
     });
     this.scoreText.setText(String(this.score));
     this.turnText.setText('TURNO '+String(this.turn+1).padStart(2,'0'));
-    this.hint.setText(this.drag?'Suelta en una zona iluminada':'Arrastra una pieza al tablero');
+    this.hint.setText(this.drag?'Suelta en una zona iluminada':this.statusMessage);
   }
   drawTray(){
     this.pieceGraphics.clear();
@@ -125,10 +126,11 @@ class PuzzleScene extends Phaser.Scene {
     const piece=this.pieces[this.drag.index], c=Math.floor((p.x-this.boardX)/this.unit),r=Math.floor((p.y-this.boardY)/this.unit);
     this.drag=null;this.fx.clear();
     if(this.canPlace(piece.shape,r,c)){
+      this.statusMessage='Bien. Sigue colocando piezas';
       piece.shape.forEach(([dx,dy])=>this.grid[r+dy][c+dx]=piece.color);
       piece.used=true;this.turn++;this.clearLines();
       if(this.pieces.every(pc=>pc.used))this.newTray();else this.drawAll();
-    } else {this.hint.setText('Esa pieza no cabe ahí');this.time.delayedCall(1000,()=>this.drawAll());this.drawAll();}
+    } else {this.statusMessage='Esa pieza no cabe ahí';this.drawAll();this.time.delayedCall(1000,()=>{this.statusMessage='Arrastra una pieza al tablero';this.drawAll()});}
   }
   canPlace(shape,r,c){
     return r>=0&&c>=0&&shape.every(([dx,dy])=>r+dy<ROWS&&c+dx<COLS&&r+dy>=0&&c+dx>=0&&!this.grid[r+dy][c+dx]);
