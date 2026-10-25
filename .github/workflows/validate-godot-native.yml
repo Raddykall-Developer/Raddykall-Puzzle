@@ -1,0 +1,31 @@
+name: Validate native Godot project
+
+on:
+  push:
+    branches:
+      - rebuild/godot-native
+  pull_request:
+    branches:
+      - main
+      - rebuild/godot-native
+  workflow_dispatch:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Godot 4
+        uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.4.1
+          use-dotnet: false
+          include-templates: false
+
+      - name: Import project and validate resources
+        run: godot --headless --editor --path godot-native --quit
+
+      - name: Run main scene headlessly
+        run: godot --headless --path godot-native --quit-after 3
