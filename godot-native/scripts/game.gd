@@ -340,9 +340,7 @@ func _show_pause() -> void:
 	dialog.popup_centered(Vector2i(320, 180))
 
 func _restart() -> void:
-	for y in SIZE:
-		for x in SIZE:
-			grid[y][x] = -1
+	model.reset()
 	score = 0
 	turn = 0
 	score_label.text = "0"
