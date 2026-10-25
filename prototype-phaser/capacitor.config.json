@@ -1,0 +1,8 @@
+{
+  "appId": "com.raddykall.puzzle.rebuild",
+  "appName": "Raddykall Puzzle Preview",
+  "webDir": "dist",
+  "server": {
+    "androidScheme": "https"
+  }
+}
